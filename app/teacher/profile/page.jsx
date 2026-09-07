@@ -1,5 +1,13 @@
-import EmptyState from "@/components/common/EmptyState";
+export default function ProfilePage() {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
+        Profile 
+      </h1>
 
-export default function TeacherProfilePage() {
-  return <EmptyState title="Profile" />;
+      <p className="mt-2 text-sm text-slate-500">
+        Teacher profile screen.
+      </p>
+    </div>
+  );
 }

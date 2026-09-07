@@ -1,3 +1,5 @@
+import ParentPortalLayout from "@/components/parent/layout";
+
 export default function ParentLayout({ children }) {
-  return children;
+  return <ParentPortalLayout>{children}</ParentPortalLayout>;
 }

@@ -1,5 +1,13 @@
-import EmptyState from "@/components/common/EmptyState";
+export default function CalendarPage() {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
+        School Calendar
+      </h1>
 
-export default function TeacherCalendarPage() {
-  return <EmptyState title="School Calendar" />;
+      <p className="mt-2 text-sm text-slate-500">
+        Teacher calendar screen.
+      </p>
+    </div>
+  );
 }

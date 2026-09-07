@@ -1,5 +1,13 @@
-import EmptyState from "@/components/common/EmptyState";
+export default function CircularsPage() {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
+        Circulars
+      </h1>
 
-export default function TeacherCircularsPage() {
-  return <EmptyState title="Circulars" />;
+      <p className="mt-2 text-sm text-slate-500">
+        Teacher circulars screen.
+      </p>
+    </div>
+  );
 }
