@@ -239,3 +239,111 @@ export async function saveTeacherResults(
 
   return response.data;
 }
+
+// =========================================================
+// GET TEACHER EXAM SCHEDULE
+// GET /teacher/exam-schedule
+// =========================================================
+
+export async function getTeacherExamSchedule(
+  {
+    classId = "",
+    examId = "",
+  } = {}
+) {
+  const params = {};
+
+  if (classId) {
+    params.class_id =
+      classId;
+  }
+
+  if (examId) {
+    params.exam_id =
+      examId;
+  }
+
+  const response =
+    await api.get(
+      "/teacher/exam-schedule",
+      {
+        params,
+      }
+    );
+
+  return response.data;
+}
+
+// =========================================================
+// GET TEACHER CIRCULARS
+// GET /teacher/circulars
+// =========================================================
+
+export async function getTeacherCirculars(
+  {
+    category = "",
+    search = "",
+  } = {}
+) {
+  const params = {};
+
+  if (category) {
+    params.category =
+      category;
+  }
+
+  if (search.trim()) {
+    params.search =
+      search.trim();
+  }
+
+  const response =
+    await api.get(
+      "/teacher/circulars",
+      {
+        params,
+      }
+    );
+
+  return response.data;
+}
+
+// =========================================================
+// GET TEACHER SCHOOL CALENDAR
+// GET /teacher/calendar
+// =========================================================
+
+export async function getTeacherSchoolCalendar(
+  {
+    eventType = "",
+  } = {}
+) {
+  const params = {};
+
+  if (eventType) {
+    params.event_type =
+      eventType;
+  }
+
+  const response =
+    await api.get(
+      "/teacher/calendar",
+      {
+        params,
+      }
+    );
+
+  return response.data;
+}
+// =========================================================
+// GET TEACHER PROFILE
+// GET /teacher/profile
+// =========================================================
+
+export async function getTeacherProfile() {
+  const response = await api.get(
+    "/teacher/profile"
+  );
+
+  return response.data;
+}

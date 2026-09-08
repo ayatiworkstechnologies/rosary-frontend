@@ -45,18 +45,20 @@ export default function PortalSidebar({
               <Image
                 src="/logo/rosary-logo.png"
                 alt="Rosary School"
-                width={160}
+                width={168}
                 height={56}
-                className="h-14 w-auto object-contain"
+                loading="eager"
+                className="object-contain"
               />
 
               <Image
                 src="/logo/rosary-logo.png"
                 alt=""
                 aria-hidden="true"
-                width={160}
+                width={168}
                 height={56}
-                className="pointer-events-none absolute inset-0 h-14 w-auto object-contain brightness-0 invert [clip-path:inset(0_0_0_31%)]"
+                loading="eager"
+                className="pointer-events-none absolute inset-0 object-contain brightness-0 invert [clip-path:inset(0_0_0_31%)]"
               />
             </div>
           </div>
