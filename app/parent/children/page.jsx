@@ -15,7 +15,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-
+import Link from "next/link";
 import {
   getParentChildren,
 } from "@/services/parentService";
@@ -609,6 +609,7 @@ function ChildCard({
           <QuickAction
             icon={CalendarCheck}
             label="Attendance"
+            href={`/parent/attendance?student=${child.id}`}
           />
 
           <QuickAction
@@ -619,6 +620,7 @@ function ChildCard({
           <QuickAction
             icon={GraduationCap}
             label="Results"
+            href={`/parent/results?student=${child.id}`}
           />
 
         </div>
@@ -699,18 +701,22 @@ function InfoBox({
 function QuickAction({
   icon: Icon,
   label,
+  href,
 }) {
   return (
-    <div
+    <Link
+      href={href}
       className="
         rounded-xl
         border
         border-[#E4EDF7]
         p-3
         text-center
+        transition
+        hover:border-[#0075FF]
+        hover:bg-[#F8FBFF]
       "
     >
-
       <Icon
         size={17}
         className="
@@ -729,7 +735,6 @@ function QuickAction({
       >
         {label}
       </p>
-
-    </div>
+    </Link>
   );
 }

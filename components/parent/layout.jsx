@@ -25,7 +25,7 @@ const parentNavigation = [
     icon: LayoutDashboard,
   },
   {
-    label: "My Child",
+    label: "My Children",
     href: "/parent/children",
     icon: Users,
   },
