@@ -1,8 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  turbopack: {
-    root: __dirname,
+  async rewrites() {
+    return [
+      {
+        source: "/backend/:path*",
+        destination:
+          "http://89.167.92.220:8016/:path*",
+      },
+    ];
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
