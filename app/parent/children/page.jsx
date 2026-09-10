@@ -5,6 +5,8 @@ import {
   useState,
 } from "react";
 
+import Link from "next/link";
+
 import {
   BookOpen,
   CalendarCheck,
@@ -15,7 +17,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import Link from "next/link";
+
 import {
   getParentChildren,
 } from "@/services/parentService";
@@ -49,9 +51,7 @@ export default function ParentChildrenPage() {
   useEffect(() => {
     const loadChildren =
       async () => {
-
         try {
-
           setLoading(true);
 
           setError("");
@@ -68,7 +68,6 @@ export default function ParentChildrenPage() {
           );
 
         } catch (err) {
-
           console.error(
             "Parent children error:",
             err
@@ -84,11 +83,8 @@ export default function ParentChildrenPage() {
           );
 
         } finally {
-
           setLoading(false);
-
         }
-
       };
 
 
@@ -111,7 +107,6 @@ export default function ParentChildrenPage() {
           justify-center
         "
       >
-
         <div className="text-center">
 
           <Loader2
@@ -134,7 +129,6 @@ export default function ParentChildrenPage() {
           </p>
 
         </div>
-
       </div>
     );
   }
@@ -242,11 +236,9 @@ export default function ParentChildrenPage() {
                 text-[#0075FF]
               "
             >
-
               <Users
                 size={22}
               />
-
             </div>
 
 
@@ -290,7 +282,7 @@ export default function ParentChildrenPage() {
           className="
             mt-5
             grid
-            gap-4
+            gap-5
             md:grid-cols-2
           "
         >
@@ -400,7 +392,9 @@ function ChildCard({
       "
     >
 
-      {/* TOP */}
+      {/* =====================================
+          TOP
+      ====================================== */}
 
       <div
         className="
@@ -475,9 +469,13 @@ function ChildCard({
       </div>
 
 
-      {/* INFORMATION */}
+      {/* =====================================
+          BODY
+      ====================================== */}
 
       <div className="p-5">
+
+        {/* INFORMATION */}
 
         <div
           className="
@@ -526,11 +524,13 @@ function ChildCard({
         </div>
 
 
-        {/* STATUS */}
+        {/* =====================================
+            STATUS
+        ====================================== */}
 
         <div
           className="
-            mt-4
+            mt-5
             flex
             items-center
             justify-between
@@ -595,33 +595,47 @@ function ChildCard({
         </div>
 
 
-        {/* QUICK LINKS */}
+        {/* =====================================
+            QUICK LINKS
+        ====================================== */}
 
         <div
           className="
-            mt-4
-            grid
-            grid-cols-3
-            gap-2
+            mt-5
+            border-t
+            border-slate-100
+            pt-5
           "
         >
 
-          <QuickAction
-            icon={CalendarCheck}
-            label="Attendance"
-            href={`/parent/attendance?student=${child.id}`}
-          />
+          <div
+            className="
+              grid
+              grid-cols-3
+              gap-2
+              sm:gap-3
+            "
+          >
 
-          <QuickAction
-            icon={BookOpen}
-            label="Homework"
-          />
+            <QuickAction
+              icon={CalendarCheck}
+              label="Attendance"
+              href={`/parent/attendance?student=${child.id}`}
+            />
 
-          <QuickAction
-            icon={GraduationCap}
-            label="Results"
-            href={`/parent/results?student=${child.id}`}
-          />
+            <QuickAction
+              icon={BookOpen}
+              label="Homework"
+              href={`/parent/homework?student=${child.id}`}
+            />
+
+            <QuickAction
+              icon={GraduationCap}
+              label="Results"
+              href={`/parent/results?student=${child.id}`}
+            />
+
+          </div>
 
         </div>
 
@@ -661,6 +675,7 @@ function InfoBox({
         <Icon
           size={13}
           className="
+            shrink-0
             text-[#0075FF]
           "
         />
@@ -703,38 +718,94 @@ function QuickAction({
   label,
   href,
 }) {
+  if (!href) {
+    return null;
+  }
+
+
   return (
     <Link
       href={href}
       className="
+        group
+        flex
+        min-h-[88px]
+        w-full
+        flex-col
+        items-center
+        justify-center
         rounded-xl
         border
-        border-[#E4EDF7]
-        p-3
+        border-[#DCE8F5]
+        bg-white
+        px-2
+        py-3
         text-center
-        transition
+        transition-all
+        duration-200
+
+        sm:min-h-[96px]
+        sm:rounded-2xl
+        sm:px-3
+        sm:py-4
+
+        hover:-translate-y-0.5
         hover:border-[#0075FF]
-        hover:bg-[#F8FBFF]
+        hover:bg-[#F7FBFF]
+        hover:shadow-[0_8px_24px_rgba(0,117,255,0.10)]
       "
     >
-      <Icon
-        size={17}
-        className="
-          mx-auto
-          text-[#0075FF]
-        "
-      />
 
-      <p
+      {/* ICON */}
+
+      <div
         className="
-          mt-1.5
-          text-[10px]
+          flex
+          h-10
+          w-10
+          shrink-0
+          items-center
+          justify-center
+          rounded-xl
+          bg-[#EAF4FF]
+          text-[#0075FF]
+          transition-all
+          duration-200
+
+          sm:h-11
+          sm:w-11
+
+          group-hover:bg-[#0075FF]
+          group-hover:text-white
+        "
+      >
+
+        <Icon
+          size={19}
+        />
+
+      </div>
+
+
+      {/* LABEL */}
+
+      <span
+        className="
+          mt-2
+          block
+          w-full
+          text-center
+          text-[11px]
           font-semibold
+          leading-[1.3]
           text-[#0B3A67]
+
+          sm:text-xs
         "
       >
         {label}
-      </p>
+      </span>
+
     </Link>
   );
 }

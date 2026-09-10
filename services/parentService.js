@@ -278,3 +278,118 @@ export async function getParentSchoolCalendar(
 
   return response.data;
 }
+
+// =========================================================
+// GET CHILD FEE INFORMATION
+// GET /parent/children/{studentId}/fees
+// =========================================================
+
+export async function getParentChildFees(
+  studentId,
+  academicYear = ""
+) {
+  if (!studentId) {
+    throw new Error(
+      "Student ID is required."
+    );
+  }
+
+  const params = {};
+
+  if (academicYear) {
+    params.academic_year =
+      academicYear;
+  }
+
+  const response =
+    await api.get(
+      `/parent/children/${studentId}/fees`,
+      {
+        params,
+      }
+    );
+
+  return response.data;
+}
+
+// =========================================================
+// GET PARENT DOWNLOAD FORMS
+// GET /parent/download-forms
+// =========================================================
+
+export async function getParentDownloadForms(
+  {
+    studentId = "",
+    category = "",
+    search = "",
+  } = {}
+) {
+  const params = {};
+
+  if (studentId) {
+    params.student_id =
+      studentId;
+  }
+
+  if (category) {
+    params.category =
+      category;
+  }
+
+  if (search.trim()) {
+    params.search =
+      search.trim();
+  }
+
+  const response =
+    await api.get(
+      "/parent/download-forms",
+      {
+        params,
+      }
+    );
+
+  return response.data;
+}
+
+// =========================================================
+// GET PARENT PROFILE
+// GET /parent/profile
+// =========================================================
+
+export async function getParentProfile() {
+  const response =
+    await api.get(
+      "/parent/profile"
+    );
+
+  return response.data;
+}
+
+// =========================================================
+// GET PARENT DASHBOARD
+// GET /parent/dashboard
+// =========================================================
+
+export async function getParentDashboard(
+  studentId
+) {
+  if (!studentId) {
+    throw new Error(
+      "Student ID is required."
+    );
+  }
+
+  const response =
+    await api.get(
+      "/parent/dashboard",
+      {
+        params: {
+          student_id:
+            studentId,
+        },
+      }
+    );
+
+  return response.data;
+}
