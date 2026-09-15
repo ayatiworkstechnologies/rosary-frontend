@@ -673,7 +673,7 @@ function CircularCard({
             item.audience ===
               "CLASS"
               ? (
-                  item.class_name ||
+                  item.name ||
                   "Class"
                 )
               : formatAudience(

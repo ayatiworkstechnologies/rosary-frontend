@@ -445,7 +445,7 @@ export default function ParentDownloadsPage() {
                 {" - "}
 
                 {
-                  child.class_name
+                  child.name
                 }
               </option>
             )
@@ -697,7 +697,7 @@ function FormCard({
 
       {item.audience ===
         "CLASS" &&
-        item.class_name && (
+        item.name && (
         <p
           className="
             mt-1
@@ -707,7 +707,7 @@ function FormCard({
           "
         >
           Class:{" "}
-          {item.class_name}
+          {item.name}
         </p>
       )}
 

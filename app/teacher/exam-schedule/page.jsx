@@ -321,7 +321,7 @@ export default function TeacherExamSchedulePage() {
             ?.toLowerCase()
             .includes(value) ||
 
-          item.class_name
+          item.name
             ?.toLowerCase()
             .includes(value)
       );
@@ -657,7 +657,7 @@ export default function TeacherExamSchedulePage() {
 
                       <TableData>
                         {
-                          item.class_name
+                          item.name
                         }
                       </TableData>
 
@@ -787,7 +787,7 @@ function ExamCard({
           </h3>
 
           <p className="mt-1 text-xs text-slate-400">
-            {item.class_name}
+            {item.name}
           </p>
 
         </div>

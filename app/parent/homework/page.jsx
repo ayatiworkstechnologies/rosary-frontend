@@ -244,8 +244,8 @@ export default function ParentHomeworkPage() {
               admission_no:
                 data.admission_no,
 
-              class_name:
-                data.class_name,
+              name:
+                data.name,
             }
           );
 
@@ -519,7 +519,7 @@ export default function ParentHomeworkPage() {
                   {child.full_name}
                   {" - "}
                   {
-                    child.class_name
+                    child.name
                   }
                 </option>
               )
@@ -674,7 +674,7 @@ export default function ParentHomeworkPage() {
                   "
                 >
                   {
-                    studentInfo.class_name
+                    studentInfo.name
                   }
 
                   {" • "}

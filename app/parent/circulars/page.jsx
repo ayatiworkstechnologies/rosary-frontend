@@ -534,7 +534,7 @@ export default function ParentCircularsPage() {
                 {" - "}
 
                 {
-                  child.class_name
+                  child.name
                 }
               </option>
             )
@@ -892,7 +892,7 @@ function getAudienceText(
     "CLASS"
   ) {
     return (
-      item.class_name ||
+      item.name ||
       "Class"
     );
   }

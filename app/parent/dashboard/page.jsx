@@ -459,7 +459,7 @@ export default function ParentDashboardPage() {
                       {" - "}
 
                       {
-                        child.class_name
+                        child.name
                       }
                     </option>
                   )
@@ -638,7 +638,7 @@ export default function ParentDashboardPage() {
                     "
                   >
                     {
-                      dashboard.class_name ||
+                      dashboard.name ||
                       "--"
                     }
 

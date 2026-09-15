@@ -374,8 +374,8 @@ export default function ParentExamSchedulePage() {
             data?.admission_no ||
             "",
 
-          class_name:
-            data?.class_name ||
+          name:
+            data?.name ||
             "",
         });
 
@@ -693,7 +693,7 @@ export default function ParentExamSchedulePage() {
                   {" - "}
 
                   {
-                    child.class_name ||
+                    child.name ||
                     "No Class"
                   }
                 </option>
@@ -855,7 +855,7 @@ export default function ParentExamSchedulePage() {
                   "
                 >
                   {
-                    studentInfo.class_name ||
+                    studentInfo.name ||
                     "--"
                   }
 

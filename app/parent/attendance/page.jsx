@@ -457,7 +457,7 @@ const requestedStudentId =
                   >
                     {child.full_name}
                     {" - "}
-                    {child.class_name}
+                    {child.name}
                   </option>
                 )
               )}
@@ -651,7 +651,7 @@ const requestedStudentId =
                   "
                 >
                   {
-                    attendance.class_name ||
+                    attendance.name ||
                     "--"
                   }
                   {" • "}

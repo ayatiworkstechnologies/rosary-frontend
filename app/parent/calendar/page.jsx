@@ -613,7 +613,7 @@ export default function ParentCalendarPage() {
                 {" - "}
 
                 {
-                  child.class_name
+                  child.name
                 }
               </option>
             )
@@ -884,7 +884,7 @@ function EventRow({
 
           {item.audience ===
             "CLASS" &&
-            item.class_name && (
+            item.name && (
             <span
               className="
                 rounded-full
@@ -897,7 +897,7 @@ function EventRow({
               "
             >
               {
-                item.class_name
+                item.name
               }
             </span>
           )}

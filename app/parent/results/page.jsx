@@ -470,7 +470,7 @@ export default function ParentResultsPage() {
               >
                 {child.full_name}
                 {" - "}
-                {child.class_name}
+                {child.name}
               </option>
             )
           )}
@@ -673,7 +673,7 @@ export default function ParentResultsPage() {
                     "
                   >
                     {
-                      resultData.class_name ||
+                      resultData.name ||
                       "--"
                     }
 

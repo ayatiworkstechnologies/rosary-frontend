@@ -731,7 +731,7 @@ function CalendarEvent({
 
           {item.audience ===
             "CLASS" &&
-            item.class_name && (
+            item.name && (
             <span
               className="
                 rounded-full
@@ -744,7 +744,7 @@ function CalendarEvent({
               "
             >
               {
-                item.class_name
+                item.name
               }
             </span>
           )}

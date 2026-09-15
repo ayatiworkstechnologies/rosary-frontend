@@ -859,7 +859,7 @@ function ChildCard({
             "
           >
             {
-              child.class_name ||
+              child.name ||
               "--"
             }
           </p>

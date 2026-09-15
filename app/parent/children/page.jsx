@@ -489,7 +489,7 @@ function ChildCard({
             icon={School}
             label="Class"
             value={
-              child.class_name ||
+              child.name ||
               "--"
             }
           />

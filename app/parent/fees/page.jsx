@@ -381,7 +381,7 @@ export default function ParentFeesPage() {
                     }
                     {" - "}
                     {
-                      child.class_name
+                      child.name
                     }
                   </option>
                 )
@@ -526,7 +526,7 @@ export default function ParentFeesPage() {
                   "
                 >
                   {
-                    feeData.class_name ||
+                    feeData.name ||
                     "--"
                   }
 

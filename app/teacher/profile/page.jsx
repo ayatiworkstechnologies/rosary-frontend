@@ -887,7 +887,7 @@ function AssignedClassCard({
               text-[#0B3A67]
             "
           >
-            {item.class_name}
+            {item.name}
           </p>
 
           <p
