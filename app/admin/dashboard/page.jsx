@@ -107,7 +107,11 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    loadDashboardStats();
+    const timer = setTimeout(() => {
+      void loadDashboardStats();
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const stats = [

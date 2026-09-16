@@ -55,7 +55,11 @@ export default function AdminClassesPage() {
   };
 
   useEffect(() => {
-    loadClasses();
+    const timer = setTimeout(() => {
+      void loadClasses();
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const filteredClasses = useMemo(() => {
