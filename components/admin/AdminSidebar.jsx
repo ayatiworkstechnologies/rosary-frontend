@@ -12,11 +12,11 @@ import {
   Megaphone,
   CalendarDays,
   WalletCards,
-  FileDown,
   ClipboardList,
   BarChart3,
   UserCog,
   X,
+  FolderDown,
 } from "lucide-react";
 
 const menuItems = [
@@ -63,12 +63,17 @@ const menuItems = [
   {
     name: "Download Forms",
     href: "/admin/downloads",
-    icon: FileDown,
+    icon: FolderDown,
   },
   {
     name: "Exams",
     href: "/admin/exams",
     icon: ClipboardList,
+  },
+  {
+    name:"Exams Schedule",
+    href:"/admin/exam-schedules",
+    icon: CalendarDays,
   },
   {
     name: "Results",
