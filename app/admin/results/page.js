@@ -40,7 +40,7 @@ const CLASSES_API =
   `${API_URL}/api/v1/admin/classes`;
 
 const EXAMS_API =
-  `${API_URL}/api/v1/admin/exams`;
+  `${API_URL}/admin/exams`;
 
 
 // ======================================================

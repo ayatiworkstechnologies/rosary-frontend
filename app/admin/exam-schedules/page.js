@@ -29,15 +29,15 @@ import {
 // API
 // ======================================================
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_ROSARY_API_URL ||
-  "http://127.0.0.1:8000";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "/backend/api/v1";
 
 const EXAMS_API =
-  `${API_BASE_URL}/api/v1/admin/exams`;
+  `${API_URL}/admin/exams`;
 
 const CLASSES_API =
-  `${API_BASE_URL}/api/v1/admin/classes`;
+  `${API_URL}/admin/classes`;
 
 
 // ======================================================
