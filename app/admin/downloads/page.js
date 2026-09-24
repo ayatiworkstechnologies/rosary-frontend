@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   Download,
@@ -13,36 +17,38 @@ import {
   X,
 } from "lucide-react";
 
+import AdminShell from "@/components/admin/AdminShell";
+
 import {
   createAdminDownload,
   deleteAdminDownload,
+  getAdminDownloads,
   updateAdminDownload,
   updateAdminDownloadStatus,
 } from "@/lib/admin-downloads";
 
-import AdminShell from "@/components/admin/AdminShell";
-
 
 // ======================================================
-// CONSTANTS
+// API
 // ======================================================
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_ROSARY_API_URL ||
-  "http://127.0.0.1:8000";
-
-const DOWNLOAD_API =
-  `${API_BASE_URL}/api/v1/admin/downloads`;
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "/backend/api/v1";
 
 const CLASSES_API =
-  `${API_BASE_URL}/api/v1/admin/classes`;
+  `${API_URL}/admin/classes`;
 
 
-const getToday = () => {
+// ======================================================
+// HELPERS
+// ======================================================
+
+function getToday() {
   return new Date()
     .toISOString()
     .split("T")[0];
-};
+}
 
 
 const EMPTY_FORM = {
@@ -54,108 +60,6 @@ const EMPTY_FORM = {
   published_date: "",
   is_active: true,
 };
-
-
-// ======================================================
-// DOWNLOAD FETCH FUNCTION
-// ======================================================
-
-async function fetchDownloads(filters = {}) {
-  const params = new URLSearchParams();
-
-  if (filters.search) {
-    params.append(
-      "search",
-      filters.search
-    );
-  }
-
-  if (filters.category) {
-    params.append(
-      "category",
-      filters.category
-    );
-  }
-
-  if (filters.audience) {
-    params.append(
-      "audience",
-      filters.audience
-    );
-  }
-
-  if (
-    filters.is_active !== undefined
-  ) {
-    params.append(
-      "is_active",
-      String(filters.is_active)
-    );
-  }
-
-  const query = params.toString();
-
-  const url = query
-    ? `${DOWNLOAD_API}?${query}`
-    : DOWNLOAD_API;
-
-  console.log(
-    "Calling Downloads API:",
-    url
-  );
-
-  const response = await fetch(
-    url,
-    {
-      method: "GET",
-      cache: "no-store",
-    }
-  );
-
-  let data = null;
-
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok) {
-    console.error(
-      "Downloads API error:",
-      response.status,
-      data
-    );
-
-    throw new Error(
-      data?.detail ||
-        `Failed to load downloads (${response.status})`
-    );
-  }
-
-  console.log(
-    "Downloads API response:",
-    data
-  );
-
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  if (Array.isArray(data?.items)) {
-    return data.items;
-  }
-
-  if (
-    Array.isArray(
-      data?.downloads
-    )
-  ) {
-    return data.downloads;
-  }
-
-  return [];
-}
 
 
 // ======================================================
@@ -233,12 +137,41 @@ export default function AdminDownloadsPage() {
     setForm,
   ] = useState({
     ...EMPTY_FORM,
-    published_date: getToday(),
+    published_date:
+      getToday(),
   });
 
 
   // ======================================================
-  // BUILD CURRENT FILTERS
+  // AUTH HEADERS
+  // ======================================================
+
+  function getAuthHeaders() {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return {};
+    }
+
+    const token =
+      localStorage.getItem(
+        "access_token"
+      );
+
+    if (!token) {
+      return {};
+    }
+
+    return {
+      Authorization:
+        `Bearer ${token}`,
+    };
+  }
+
+
+  // ======================================================
+  // FILTER BUILDER
   // ======================================================
 
   const buildFilters = () => {
@@ -263,7 +196,8 @@ export default function AdminDownloadsPage() {
       statusFilter !== ""
     ) {
       filters.is_active =
-        statusFilter === "active";
+        statusFilter ===
+        "active";
     }
 
     return filters;
@@ -277,86 +211,98 @@ export default function AdminDownloadsPage() {
   useEffect(() => {
     let cancelled = false;
 
-    const loadClasses =
-      async () => {
+    async function loadClasses() {
+      try {
+        const response =
+          await fetch(
+            CLASSES_API,
+            {
+              method: "GET",
+
+              headers: {
+                ...getAuthHeaders(),
+              },
+
+              cache:
+                "no-store",
+            }
+          );
+
+        let data = null;
+
         try {
-          const response =
-            await fetch(
-              CLASSES_API,
-              {
-                method: "GET",
-                cache: "no-store",
-              }
-            );
-
-          let data = null;
-
-          try {
-            data =
-              await response.json();
-          } catch {
-            data = null;
-          }
-
-          if (
-            !response.ok
-          ) {
-            throw new Error(
-              data?.detail ||
-                `Failed to load classes (${response.status})`
-            );
-          }
-
-          if (cancelled) {
-            return;
-          }
-
-          console.log(
-            "Classes API:",
-            data
-          );
-
-          if (
-            Array.isArray(data)
-          ) {
-            setClasses(data);
-            return;
-          }
-
-          if (
-            Array.isArray(
-              data?.items
-            )
-          ) {
-            setClasses(
-              data.items
-            );
-            return;
-          }
-
-          if (
-            Array.isArray(
-              data?.classes
-            )
-          ) {
-            setClasses(
-              data.classes
-            );
-            return;
-          }
-
-          setClasses([]);
-        } catch (err) {
-          console.error(
-            "Class loading error:",
-            err
-          );
-
-          if (!cancelled) {
-            setClasses([]);
-          }
+          data =
+            await response.json();
+        } catch {
+          data = null;
         }
-      };
+
+        if (!response.ok) {
+          throw new Error(
+            data?.detail ||
+              "Unable to load classes."
+          );
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          Array.isArray(data)
+        ) {
+          setClasses(data);
+          return;
+        }
+
+        if (
+          Array.isArray(
+            data?.data
+          )
+        ) {
+          setClasses(
+            data.data
+          );
+
+          return;
+        }
+
+        if (
+          Array.isArray(
+            data?.items
+          )
+        ) {
+          setClasses(
+            data.items
+          );
+
+          return;
+        }
+
+        if (
+          Array.isArray(
+            data?.classes
+          )
+        ) {
+          setClasses(
+            data.classes
+          );
+
+          return;
+        }
+
+        setClasses([]);
+      } catch (err) {
+        console.error(
+          "Class loading error:",
+          err
+        );
+
+        if (!cancelled) {
+          setClasses([]);
+        }
+      }
+    }
 
     loadClasses();
 
@@ -367,7 +313,7 @@ export default function AdminDownloadsPage() {
 
 
   // ======================================================
-  // LOAD DOWNLOADS WHEN FILTER CHANGES
+  // LOAD DOWNLOADS
   // ======================================================
 
   useEffect(() => {
@@ -412,43 +358,81 @@ export default function AdminDownloadsPage() {
                 "active";
             }
 
-            const data =
-              await fetchDownloads(
+            const response =
+              await getAdminDownloads(
                 filters
               );
 
+            if (cancelled) {
+              return;
+            }
+
             if (
-              !cancelled
+              Array.isArray(
+                response
+              )
             ) {
               setDownloads(
-                data
+                response
               );
+
+              return;
             }
+
+            if (
+              Array.isArray(
+                response?.data
+              )
+            ) {
+              setDownloads(
+                response.data
+              );
+
+              return;
+            }
+
+            if (
+              Array.isArray(
+                response?.items
+              )
+            ) {
+              setDownloads(
+                response.items
+              );
+
+              return;
+            }
+
+            if (
+              Array.isArray(
+                response?.downloads
+              )
+            ) {
+              setDownloads(
+                response.downloads
+              );
+
+              return;
+            }
+
+            setDownloads([]);
           } catch (err) {
             console.error(
               "Download loading error:",
               err
             );
 
-            if (
-              !cancelled
-            ) {
+            if (!cancelled) {
               setError(
                 err?.message ||
                   "Unable to load downloads."
               );
 
-              setDownloads(
-                []
-              );
+              setDownloads([]);
             }
           } finally {
-            if (
-              !cancelled
-            ) {
-              setLoading(
-                false
-              );
+            if (!cancelled) {
+              setLoading(false);
             }
           }
         },
@@ -458,9 +442,7 @@ export default function AdminDownloadsPage() {
     return () => {
       cancelled = true;
 
-      clearTimeout(
-        timer
-      );
+      clearTimeout(timer);
     };
   }, [
     search,
@@ -471,7 +453,7 @@ export default function AdminDownloadsPage() {
 
 
   // ======================================================
-  // MANUAL REFRESH
+  // MANUAL RELOAD
   // ======================================================
 
   const loadDownloads =
@@ -480,18 +462,61 @@ export default function AdminDownloadsPage() {
         setLoading(true);
         setError("");
 
-        const filters =
-          buildFilters();
-
-        const data =
-          await fetchDownloads(
-            filters
+        const response =
+          await getAdminDownloads(
+            buildFilters()
           );
 
-        setDownloads(data);
+        if (
+          Array.isArray(response)
+        ) {
+          setDownloads(
+            response
+          );
+
+          return;
+        }
+
+        if (
+          Array.isArray(
+            response?.data
+          )
+        ) {
+          setDownloads(
+            response.data
+          );
+
+          return;
+        }
+
+        if (
+          Array.isArray(
+            response?.items
+          )
+        ) {
+          setDownloads(
+            response.items
+          );
+
+          return;
+        }
+
+        if (
+          Array.isArray(
+            response?.downloads
+          )
+        ) {
+          setDownloads(
+            response.downloads
+          );
+
+          return;
+        }
+
+        setDownloads([]);
       } catch (err) {
         console.error(
-          "Manual download refresh error:",
+          "Reload downloads error:",
           err
         );
 
@@ -508,7 +533,7 @@ export default function AdminDownloadsPage() {
 
 
   // ======================================================
-  // CATEGORY OPTIONS
+  // CATEGORIES
   // ======================================================
 
   const categories =
@@ -528,7 +553,7 @@ export default function AdminDownloadsPage() {
 
 
   // ======================================================
-  // FORM CHANGE
+  // CHANGE
   // ======================================================
 
   const handleChange = (
@@ -541,22 +566,19 @@ export default function AdminDownloadsPage() {
       checked,
     } = event.target;
 
-    setForm(
-      (previous) => ({
-        ...previous,
+    setForm((previous) => ({
+      ...previous,
 
-        [name]:
-          type ===
-          "checkbox"
-            ? checked
-            : value,
-      })
-    );
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
+    }));
   };
 
 
   // ======================================================
-  // OPEN ADD MODAL
+  // ADD MODAL
   // ======================================================
 
   const openAddModal = () => {
@@ -579,7 +601,7 @@ export default function AdminDownloadsPage() {
 
 
   // ======================================================
-  // OPEN EDIT MODAL
+  // EDIT MODAL
   // ======================================================
 
   const openEditModal = (
@@ -694,10 +716,13 @@ export default function AdminDownloadsPage() {
     }
 
     const maxSize =
-      10 * 1024 * 1024;
+      10 *
+      1024 *
+      1024;
 
     if (
-      file.size > maxSize
+      file.size >
+      maxSize
     ) {
       setError(
         "File size cannot exceed 10 MB."
@@ -840,9 +865,7 @@ export default function AdminDownloadsPage() {
         )
       );
 
-      if (
-        selectedFile
-      ) {
+      if (selectedFile) {
         formData.append(
           "file",
           selectedFile
@@ -852,9 +875,7 @@ export default function AdminDownloadsPage() {
       try {
         setSaving(true);
 
-        if (
-          editingItem
-        ) {
+        if (editingItem) {
           await updateAdminDownload(
             editingItem.id,
             formData
@@ -875,13 +896,9 @@ export default function AdminDownloadsPage() {
 
         setModalOpen(false);
 
-        setEditingItem(
-          null
-        );
+        setEditingItem(null);
 
-        setSelectedFile(
-          null
-        );
+        setSelectedFile(null);
 
         setForm({
           ...EMPTY_FORM,
@@ -1002,24 +1019,27 @@ export default function AdminDownloadsPage() {
     const classItem =
       classes.find(
         (item) =>
-          Number(
-            item.id
-          ) ===
-          Number(
-            classId
-          )
+          Number(item.id) ===
+          Number(classId)
       );
 
     if (!classItem) {
       return `Class ${classId}`;
     }
 
-    return (
+    const className =
       classItem.name ||
       classItem.class_name ||
       classItem.display_name ||
-      `Class ${classId}`
-    );
+      `Class ${classId}`;
+
+    if (
+      classItem.section
+    ) {
+      return `${className} - ${classItem.section}`;
+    }
+
+    return className;
   };
 
 
@@ -1047,7 +1067,9 @@ export default function AdminDownloadsPage() {
         return "Specific Class";
 
       default:
-        return audience || "-";
+        return (
+          audience || "-"
+        );
     }
   };
 
@@ -1065,13 +1087,27 @@ export default function AdminDownloadsPage() {
 
     if (
       fileUrl.startsWith(
-        "http://"
-      ) ||
-      fileUrl.startsWith(
         "https://"
       )
     ) {
       return fileUrl;
+    }
+
+    // Do not directly open HTTP backend
+    // from the HTTPS Vercel frontend.
+    if (
+      fileUrl.startsWith(
+        "http://"
+      )
+    ) {
+      try {
+        const url =
+          new URL(fileUrl);
+
+        return `/backend${url.pathname}`;
+      } catch {
+        return "#";
+      }
     }
 
     const normalizedUrl =
@@ -1079,23 +1115,12 @@ export default function AdminDownloadsPage() {
         ? fileUrl
         : `/${fileUrl}`;
 
-    /*
-      Existing DB records:
-      /forms/file.pdf
-
-      New upload records:
-      /uploads/download_forms/file.pdf
-
-      Using /backend here means both paths
-      are forwarded to FastAPI.
-    */
-
     return `/backend${normalizedUrl}`;
   };
 
 
   // ======================================================
-  // RENDER
+  // UI
   // ======================================================
 
   return (
@@ -1104,9 +1129,7 @@ export default function AdminDownloadsPage() {
       <div className="mx-auto max-w-[1500px]">
 
 
-        {/* ============================================= */}
         {/* HEADER */}
-        {/* ============================================= */}
 
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
@@ -1117,9 +1140,9 @@ export default function AdminDownloadsPage() {
             </h1>
 
             <p className="mt-1 text-sm text-gray-500">
-              Manage downloadable forms and
-              documents for parents, students
-              and teachers.
+              Manage downloadable forms
+              and documents for parents,
+              students and teachers.
             </p>
 
           </div>
@@ -1138,9 +1161,7 @@ export default function AdminDownloadsPage() {
         </div>
 
 
-        {/* ============================================= */}
         {/* SUCCESS */}
-        {/* ============================================= */}
 
         {success && (
           <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
@@ -1149,9 +1170,7 @@ export default function AdminDownloadsPage() {
         )}
 
 
-        {/* ============================================= */}
         {/* ERROR */}
-        {/* ============================================= */}
 
         {error &&
           !modalOpen && (
@@ -1161,9 +1180,7 @@ export default function AdminDownloadsPage() {
           )}
 
 
-        {/* ============================================= */}
         {/* FILTERS */}
-        {/* ============================================= */}
 
         <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
 
@@ -1197,7 +1214,9 @@ export default function AdminDownloadsPage() {
             {/* CATEGORY */}
 
             <select
-              value={categoryFilter}
+              value={
+                categoryFilter
+              }
               onChange={(event) =>
                 setCategoryFilter(
                   event.target.value
@@ -1212,12 +1231,14 @@ export default function AdminDownloadsPage() {
 
               {categories.map(
                 (category) => (
+
                   <option
                     key={category}
                     value={category}
                   >
                     {category}
                   </option>
+
                 )
               )}
 
@@ -1227,7 +1248,9 @@ export default function AdminDownloadsPage() {
             {/* AUDIENCE */}
 
             <select
-              value={audienceFilter}
+              value={
+                audienceFilter
+              }
               onChange={(event) =>
                 setAudienceFilter(
                   event.target.value
@@ -1266,7 +1289,9 @@ export default function AdminDownloadsPage() {
             {/* STATUS */}
 
             <select
-              value={statusFilter}
+              value={
+                statusFilter
+              }
               onChange={(event) =>
                 setStatusFilter(
                   event.target.value
@@ -1294,9 +1319,7 @@ export default function AdminDownloadsPage() {
         </div>
 
 
-        {/* ============================================= */}
         {/* TABLE */}
-        {/* ============================================= */}
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
@@ -1312,7 +1335,8 @@ export default function AdminDownloadsPage() {
 
             </div>
 
-          ) : downloads.length === 0 ? (
+          ) : downloads.length ===
+            0 ? (
 
             <div className="flex min-h-[350px] flex-col items-center justify-center p-8 text-center">
 
@@ -1329,16 +1353,20 @@ export default function AdminDownloadsPage() {
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
-                No download forms match your
-                current filters.
+                No download forms match
+                your current filters.
               </p>
 
               <button
                 type="button"
-                onClick={openAddModal}
+                onClick={
+                  openAddModal
+                }
                 className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#0075FF] px-4 py-2.5 text-sm font-semibold text-white"
               >
-                <Plus size={17} />
+                <Plus
+                  size={17}
+                />
 
                 Add Form
               </button>
@@ -1398,7 +1426,6 @@ export default function AdminDownloadsPage() {
                         className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
                       >
 
-
                         {/* FORM */}
 
                         <td className="px-5 py-4">
@@ -1417,11 +1444,16 @@ export default function AdminDownloadsPage() {
                             <div className="min-w-0">
 
                               <p className="max-w-[280px] truncate text-sm font-semibold text-slate-900">
-                                {item.title}
+                                {
+                                  item.title
+                                }
                               </p>
 
                               <p className="mt-1 max-w-[280px] truncate text-xs text-slate-500">
-                                {item.file_name}
+                                {
+                                  item.file_name ||
+                                  "-"
+                                }
                               </p>
 
                             </div>
@@ -1436,9 +1468,9 @@ export default function AdminDownloadsPage() {
                         <td className="px-5 py-4">
 
                           <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700">
-
-                            {item.category}
-
+                            {
+                              item.category
+                            }
                           </span>
 
                         </td>
@@ -1459,16 +1491,11 @@ export default function AdminDownloadsPage() {
 
                         <td className="px-5 py-4 text-sm text-slate-600">
 
-                          {item.audience ===
-                          "CLASS"
+                          {item.class_id
                             ? getClassName(
                                 item.class_id
                               )
-                            : item.class_id
-                              ? getClassName(
-                                  item.class_id
-                                )
-                              : "All Classes"}
+                            : "All Classes"}
 
                         </td>
 
@@ -1483,9 +1510,14 @@ export default function AdminDownloadsPage() {
                               ).toLocaleDateString(
                                 "en-IN",
                                 {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
+                                  day:
+                                    "2-digit",
+
+                                  month:
+                                    "short",
+
+                                  year:
+                                    "numeric",
                                 }
                               )
                             : "-"}
@@ -1510,11 +1542,9 @@ export default function AdminDownloadsPage() {
                                 : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                             }`}
                           >
-
                             {item.is_active
                               ? "Active"
                               : "Inactive"}
-
                           </button>
 
                         </td>
@@ -1607,9 +1637,7 @@ export default function AdminDownloadsPage() {
       </div>
 
 
-      {/* ================================================= */}
       {/* ADD / EDIT MODAL */}
-      {/* ================================================= */}
 
       {modalOpen && (
 
@@ -1645,12 +1673,12 @@ export default function AdminDownloadsPage() {
 
               <button
                 type="button"
-                onClick={closeModal}
+                onClick={
+                  closeModal
+                }
                 className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200"
               >
-
                 <X size={18} />
-
               </button>
 
             </div>
@@ -1659,17 +1687,16 @@ export default function AdminDownloadsPage() {
             {/* FORM */}
 
             <form
-              onSubmit={handleSubmit}
+              onSubmit={
+                handleSubmit
+              }
               className="p-5 md:p-6"
             >
-
 
               {error && (
 
                 <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-
                   {error}
-
                 </div>
 
               )}
@@ -1683,20 +1710,21 @@ export default function AdminDownloadsPage() {
                 <div className="md:col-span-2">
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-
                     Form Title
-
                     <span className="text-red-500">
                       *
                     </span>
-
                   </label>
 
                   <input
                     type="text"
                     name="title"
-                    value={form.title}
-                    onChange={handleChange}
+                    value={
+                      form.title
+                    }
+                    onChange={
+                      handleChange
+                    }
                     placeholder="Admission Application Form"
                     className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none transition focus:border-[#0075FF] focus:ring-2 focus:ring-blue-100"
                   />
@@ -1709,20 +1737,21 @@ export default function AdminDownloadsPage() {
                 <div>
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-
                     Category
-
                     <span className="text-red-500">
                       *
                     </span>
-
                   </label>
 
                   <input
                     type="text"
                     name="category"
-                    value={form.category}
-                    onChange={handleChange}
+                    value={
+                      form.category
+                    }
+                    onChange={
+                      handleChange
+                    }
                     placeholder="Admission"
                     className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none focus:border-[#0075FF] focus:ring-2 focus:ring-blue-100"
                   />
@@ -1740,8 +1769,12 @@ export default function AdminDownloadsPage() {
 
                   <select
                     name="audience"
-                    value={form.audience}
-                    onChange={handleChange}
+                    value={
+                      form.audience
+                    }
+                    onChange={
+                      handleChange
+                    }
                     className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none focus:border-[#0075FF]"
                   >
 
@@ -1780,17 +1813,23 @@ export default function AdminDownloadsPage() {
 
                     {form.audience ===
                       "CLASS" && (
+
                       <span className="text-red-500">
                         *
                       </span>
+
                     )}
 
                   </label>
 
                   <select
                     name="class_id"
-                    value={form.class_id}
-                    onChange={handleChange}
+                    value={
+                      form.class_id
+                    }
+                    onChange={
+                      handleChange
+                    }
                     className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none focus:border-[#0075FF]"
                   >
 
@@ -1802,8 +1841,12 @@ export default function AdminDownloadsPage() {
                       (item) => (
 
                         <option
-                          key={item.id}
-                          value={item.id}
+                          key={
+                            item.id
+                          }
+                          value={
+                            item.id
+                          }
                         >
 
                           {item.name ||
@@ -1811,19 +1854,16 @@ export default function AdminDownloadsPage() {
                             item.display_name ||
                             `Class ${item.id}`}
 
+                          {item.section
+                            ? ` - ${item.section}`
+                            : ""}
+
                         </option>
 
                       )
                     )}
 
                   </select>
-
-                  {form.audience ===
-                    "CLASS" && (
-                    <p className="mt-1.5 text-xs text-slate-500">
-                      Select the class that should receive this form.
-                    </p>
-                  )}
 
                 </div>
 
@@ -1848,7 +1888,9 @@ export default function AdminDownloadsPage() {
                     value={
                       form.published_date
                     }
-                    onChange={handleChange}
+                    onChange={
+                      handleChange
+                    }
                     className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none focus:border-[#0075FF]"
                   />
 
@@ -1865,8 +1907,12 @@ export default function AdminDownloadsPage() {
 
                   <textarea
                     name="description"
-                    value={form.description}
-                    onChange={handleChange}
+                    value={
+                      form.description
+                    }
+                    onChange={
+                      handleChange
+                    }
                     rows={4}
                     placeholder="Enter form description..."
                     className="w-full resize-none rounded-xl border border-slate-200 px-3.5 py-3 text-sm outline-none focus:border-[#0075FF] focus:ring-2 focus:ring-blue-100"
@@ -1896,7 +1942,6 @@ export default function AdminDownloadsPage() {
 
                   <label className="flex cursor-pointer items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 transition hover:border-[#0075FF] hover:bg-blue-50/40">
 
-
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#0075FF] shadow-sm">
 
                       <Upload
@@ -1919,7 +1964,8 @@ export default function AdminDownloadsPage() {
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500">
-                        PDF, DOC, DOCX — Maximum 10 MB
+                        PDF, DOC, DOCX —
+                        Maximum 10 MB
                       </p>
 
                     </div>
@@ -1969,7 +2015,9 @@ export default function AdminDownloadsPage() {
                   {editingItem && (
 
                     <p className="mt-2 text-xs text-slate-500">
-                      Leave the file unchanged if you only want to edit the form details.
+                      Leave the file unchanged
+                      if you only want to edit
+                      the form details.
                     </p>
 
                   )}
@@ -1990,7 +2038,9 @@ export default function AdminDownloadsPage() {
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500">
-                        Active forms are visible to the selected audience.
+                        Active forms are
+                        visible to the selected
+                        audience.
                       </p>
 
                     </div>
@@ -2002,7 +2052,9 @@ export default function AdminDownloadsPage() {
                       checked={
                         form.is_active
                       }
-                      onChange={handleChange}
+                      onChange={
+                        handleChange
+                      }
                       className="h-5 w-5 accent-[#0075FF]"
                     />
 
@@ -2013,22 +2065,19 @@ export default function AdminDownloadsPage() {
               </div>
 
 
-              {/* ========================================= */}
               {/* BUTTONS */}
-              {/* ========================================= */}
 
               <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
-
 
                 <button
                   type="button"
                   disabled={saving}
-                  onClick={closeModal}
+                  onClick={
+                    closeModal
+                  }
                   className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                 >
-
                   Cancel
-
                 </button>
 
 
@@ -2040,15 +2089,12 @@ export default function AdminDownloadsPage() {
 
                   {saving ? (
                     <>
-
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
 
                       Saving...
-
                     </>
                   ) : (
                     <>
-
                       {editingItem ? (
                         <Pencil
                           size={17}
@@ -2062,7 +2108,6 @@ export default function AdminDownloadsPage() {
                       {editingItem
                         ? "Update Form"
                         : "Save Form"}
-
                     </>
                   )}
 
