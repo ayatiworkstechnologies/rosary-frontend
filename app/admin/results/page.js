@@ -34,10 +34,10 @@ const API_URL =
   "/backend/api/v1";
 
 const STUDENTS_API =
-  `${API_URL}/api/v1/admin/students`;
+  `${API_URL}/admin/students`;
 
 const CLASSES_API =
-  `${API_URL}/api/v1/admin/classes`;
+  `${API_URL}/admin/classes`;
 
 const EXAMS_API =
   `${API_URL}/admin/exams`;
