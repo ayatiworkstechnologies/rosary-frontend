@@ -709,7 +709,7 @@ export default function ParentDashboardPage() {
 
 
 
-      {/\* HEADER \*/}
+      {/* HEADER */}
 
 
 
@@ -791,7 +791,7 @@ export default function ParentDashboardPage() {
 
 
 
-        {/\* CHILD \*/}
+        {/* CHILD */}
 
 
 
@@ -991,7 +991,7 @@ export default function ParentDashboardPage() {
 
 
 
-      {/\* ERROR \*/}
+      {/* ERROR */}
 
 
 
@@ -1033,7 +1033,7 @@ export default function ParentDashboardPage() {
 
 
 
-      {/\* NO CHILD \*/}
+      {/* NO CHILD */}
 
 
 
@@ -1049,7 +1049,7 @@ export default function ParentDashboardPage() {
 
 
 
-      {/\* LOADING \*/}
+      {/* LOADING */}
 
 
 
@@ -1134,6 +1134,15 @@ export default function ParentDashboardPage() {
         dashboard && (
 
         <>
+
+
+
+          {/* =====================================
+
+              STUDENT HERO
+
+          ====================================== */}
+
 
 
           <section
@@ -1394,7 +1403,11 @@ export default function ParentDashboardPage() {
 
 
 
-         
+          {/* =====================================
+
+              MAIN SUMMARY
+
+          ====================================== */}
 
 
 
@@ -1596,7 +1609,11 @@ export default function ParentDashboardPage() {
 
 
 
-          
+          {/* =====================================
+
+              UPCOMING EXAM + FEE
+
+          ====================================== */}
 
 
 
@@ -1618,7 +1635,7 @@ export default function ParentDashboardPage() {
 
 
 
-            
+            {/* EXAM */}
 
 
 
@@ -1884,7 +1901,7 @@ export default function ParentDashboardPage() {
 
 
 
-        
+            {/* FEES */}
 
 
 
@@ -2028,7 +2045,11 @@ export default function ParentDashboardPage() {
 
 
 
-       
+          {/* =====================================
+
+              CIRCULARS + EVENTS
+
+          ====================================== */}
 
 
 
@@ -2050,7 +2071,8 @@ export default function ParentDashboardPage() {
 
 
 
-           
+            {/* CIRCULARS */}
+
 
 
             <Panel
@@ -2147,7 +2169,7 @@ export default function ParentDashboardPage() {
 
 
 
-         
+            {/* EVENTS */}
 
 
 
