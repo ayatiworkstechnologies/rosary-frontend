@@ -1291,7 +1291,7 @@ export default function ParentDashboardPage() {
 
                     {
 
-                      dashboard.name ||
+                      dashboard.class_name ||
 
                       "--"
 

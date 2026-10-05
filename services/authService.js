@@ -15,11 +15,15 @@ export async function getCurrentUser() {
 export function logoutUser() {
   if (typeof window === "undefined") return;
 
+  // Clear persistent login data
   localStorage.removeItem("access_token");
   localStorage.removeItem("current_user");
   localStorage.removeItem("user_role");
+  localStorage.removeItem("parent_login_admission_no");
 
+  // Clear session login data
   sessionStorage.removeItem("access_token");
   sessionStorage.removeItem("current_user");
   sessionStorage.removeItem("user_role");
+  sessionStorage.removeItem("parent_login_admission_no");
 }
