@@ -17,6 +17,7 @@ import {
   UserCog,
   X,
   FolderDown,
+  LogOut,
 } from "lucide-react";
 
 const menuItems = [
@@ -71,8 +72,8 @@ const menuItems = [
     icon: ClipboardList,
   },
   {
-    name:"Exams Schedule",
-    href:"/admin/exam-schedules",
+    name: "Exam Schedule",
+    href: "/admin/exam-schedules",
     icon: CalendarDays,
   },
   {
@@ -90,11 +91,16 @@ const menuItems = [
 export default function AdminSidebar({
   open,
   onClose,
+  onLogout,
 }) {
   const pathname = usePathname();
 
   return (
     <>
+      {/* =========================================
+          MOBILE OVERLAY
+      ========================================== */}
+
       {open && (
         <div
           onClick={onClose}
@@ -102,12 +108,16 @@ export default function AdminSidebar({
         />
       )}
 
+      {/* =========================================
+          SIDEBAR
+      ========================================== */}
+
       <aside
         className={`
           fixed left-0 top-0 z-50
-          h-screen w-[280px]
-          border-r border-gray-200
-          bg-white
+          flex h-screen w-[280px] flex-col
+          bg-[#08679F]
+          text-white
           transition-transform duration-300
           lg:static lg:translate-x-0
           ${
@@ -117,31 +127,59 @@ export default function AdminSidebar({
           }
         `}
       >
-        <div className="flex h-[76px] items-center justify-between border-b border-gray-100 px-6">
+        {/* =========================================
+            SIDEBAR HEADER
+        ========================================== */}
+
+        <div
+          className="
+            flex h-[76px] shrink-0
+            items-center justify-between
+            border-b border-white/10
+            px-6
+          "
+        >
           <div>
-            <h1 className="text-xl font-bold text-[#0075FF]">
+            <h1 className="text-xl font-bold text-white">
               Rosary
             </h1>
 
-            <p className="text-xs text-gray-500">
+            <p className="mt-0.5 text-xs text-white/70">
               Admin Portal
             </p>
           </div>
 
+          {/* Mobile Close */}
           <button
+            type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 lg:hidden"
+            className="
+              flex h-9 w-9
+              items-center justify-center
+              rounded-lg
+              text-white
+              transition
+              hover:bg-white/10
+              lg:hidden
+            "
+            aria-label="Close sidebar"
           >
-            <X size={20} />
+            <X size={21} />
           </button>
         </div>
 
-        <nav className="h-[calc(100vh-76px)] overflow-y-auto px-4 py-5">
-          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-            Administration
-          </p>
+        {/* =========================================
+            NAVIGATION
+        ========================================== */}
 
-          <div className="space-y-1">
+        <nav
+          className="
+            min-h-0 flex-1
+            overflow-y-auto
+            py-3
+          "
+        >
+          <div>
             {menuItems.map((item) => {
               const Icon = item.icon;
 
@@ -157,25 +195,83 @@ export default function AdminSidebar({
                   href={item.href}
                   onClick={onClose}
                   className={`
-                    flex items-center gap-3
-                    rounded-xl px-3 py-3
-                    text-sm font-medium
+                    flex min-h-[52px]
+                    items-center gap-4
+                    px-7
+                    text-[16px]
+                    font-medium
                     transition-all
+                    duration-200
+
                     ${
                       active
-                        ? "bg-[#0075FF] text-white shadow-sm"
-                        : "text-gray-600 hover:bg-blue-50 hover:text-[#0075FF]"
+                        ? "bg-[#087EF5] text-white"
+                        : "text-white hover:bg-white/10"
                     }
                   `}
                 >
-                  <Icon size={19} />
+                  <Icon
+                    size={23}
+                    strokeWidth={2}
+                    className="shrink-0"
+                  />
 
-                  <span>{item.name}</span>
+                  <span>
+                    {item.name}
+                  </span>
                 </Link>
               );
             })}
           </div>
         </nav>
+
+        {/* =========================================
+            LOGOUT
+        ========================================== */}
+
+        <div
+          className="
+            shrink-0
+            border-t border-white/10
+            bg-[#08679F]
+            px-7 py-5
+          "
+        >
+          <button
+            type="button"
+            onClick={onLogout}
+            className="
+              flex w-full
+              items-center gap-4
+              text-[16px]
+              font-medium
+              text-white
+              transition
+              hover:opacity-80
+            "
+          >
+            {/* Logout Circle */}
+            <div
+              className="
+                flex h-10 w-10
+                shrink-0
+                items-center justify-center
+                rounded-full
+                border border-white/40
+                bg-[#064C78]
+              "
+            >
+              <LogOut
+                size={20}
+                strokeWidth={2}
+              />
+            </div>
+
+            <span>
+              Logout
+            </span>
+          </button>
+        </div>
       </aside>
     </>
   );

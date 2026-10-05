@@ -191,8 +191,8 @@ export default function AdminDashboardPage() {
                 inline-flex h-11 items-center
                 justify-center gap-2 rounded-xl
                 bg-[#0075FF] px-5
-                text-sm font-semibold text-white
-                transition hover:bg-[#0067DF]
+                text-sm font-semibold !text-white
+               hover:bg-[#0067DF]
               "
             >
               <Plus size={18} />
