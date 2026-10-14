@@ -5,7 +5,7 @@ const nextConfig = {
       {
         source: "/backend/:path*",
         destination:
-          "http://127.0.0.1:8000/:path*",
+          "http://89.167.92.220:8016/:path*",
       },
     ];
   },

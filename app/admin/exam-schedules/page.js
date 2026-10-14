@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import AdminShell from "@/components/admin/AdminShell";
+import api from "@/services/api";
 
 import {
   createAdminExamSchedule,
@@ -23,21 +24,6 @@ import {
   getAdminExamSchedules,
   updateAdminExamSchedule,
 } from "@/lib/admin-exam-schedules";
-
-
-// ======================================================
-// API
-// ======================================================
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "/backend/api/v1";
-
-const EXAMS_API =
-  `${API_URL}/admin/exams`;
-
-const CLASSES_API =
-  `${API_URL}/admin/classes`;
 
 
 // ======================================================
@@ -134,73 +120,46 @@ export default function AdminExamSchedulesPage() {
   // ======================================================
 
   const normalizeArray = (
-    data,
-    keys = []
-  ) => {
-    if (Array.isArray(data)) {
-      return data;
-    }
+  data,
+  keys = []
+) => {
+  if (Array.isArray(data)) {
+    return data;
+  }
 
-    for (const key of keys) {
-      if (
-        Array.isArray(
-          data?.[key]
-        )
-      ) {
-        return data[key];
-      }
-    }
-
+  for (const key of keys) {
     if (
       Array.isArray(
-        data?.items
+        data?.[key]
       )
     ) {
-      return data.items;
+      return data[key];
     }
+  }
 
-    return [];
-  };
+  if (
+    Array.isArray(
+      data?.data
+    )
+  ) {
+    return data.data;
+  }
 
+  if (
+    Array.isArray(
+      data?.items
+    )
+  ) {
+    return data.items;
+  }
 
-  // ======================================================
-  // FETCH JSON
-  // ======================================================
-
-  const fetchJson = async (
-    url
-  ) => {
-    const response =
-      await fetch(
-        url,
-        {
-          method: "GET",
-          cache: "no-store",
-        }
-      );
-
-    let data = null;
-
-    try {
-      data =
-        await response.json();
-    } catch {
-      data = null;
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        data?.detail ||
-          `Request failed (${response.status})`
-      );
-    }
-
-    return data;
-  };
+  return [];
+};
 
 
   // ======================================================
   // LOAD EXAMS + CLASSES
+  // AUTHENTICATED API
   // ======================================================
 
   useEffect(() => {
@@ -210,16 +169,16 @@ export default function AdminExamSchedulesPage() {
       async () => {
         try {
           const [
-            examData,
-            classData,
+            examResponse,
+            classResponse,
           ] =
             await Promise.all([
-              fetchJson(
-                EXAMS_API
+              api.get(
+                "/admin/exams"
               ),
 
-              fetchJson(
-                CLASSES_API
+              api.get(
+                "/admin/classes"
               ),
             ]);
 
@@ -229,14 +188,14 @@ export default function AdminExamSchedulesPage() {
 
           setExams(
             normalizeArray(
-              examData,
+              examResponse.data,
               ["exams"]
             )
           );
 
           setClasses(
             normalizeArray(
-              classData,
+              classResponse.data,
               ["classes"]
             )
           );
@@ -248,7 +207,10 @@ export default function AdminExamSchedulesPage() {
 
           if (!cancelled) {
             setError(
-              err?.message ||
+              err?.response
+                ?.data
+                ?.detail ||
+                err?.message ||
                 "Unable to load exams or classes."
             );
           }
@@ -308,7 +270,10 @@ export default function AdminExamSchedulesPage() {
         );
 
         setError(
-          err?.message ||
+          err?.response
+            ?.data
+            ?.detail ||
+            err?.message ||
             "Unable to load exam schedules."
         );
 
@@ -372,7 +337,10 @@ export default function AdminExamSchedulesPage() {
               !cancelled
             ) {
               setError(
-                err?.message ||
+                err?.response
+                  ?.data
+                  ?.detail ||
+                  err?.message ||
                   "Unable to load exam schedules."
               );
 
@@ -450,8 +418,9 @@ export default function AdminExamSchedulesPage() {
     }
 
     return (
-      item.name ||
+      item.display_name ||
       item.class_name ||
+      item.name ||
       `Class ${item.id}`
     );
   };
@@ -544,8 +513,7 @@ export default function AdminExamSchedulesPage() {
         item.room || "",
 
       instructions:
-        item.instructions ||
-        "",
+        item.instructions || "",
     });
 
     setError("");
@@ -556,7 +524,7 @@ export default function AdminExamSchedulesPage() {
 
 
   // ======================================================
-  // CLOSE
+  // CLOSE MODAL
   // ======================================================
 
   const closeModal = () => {
@@ -719,6 +687,7 @@ export default function AdminExamSchedulesPage() {
         });
 
         await loadSchedules();
+
       } catch (err) {
         console.error(
           "Save schedule error:",
@@ -726,7 +695,10 @@ export default function AdminExamSchedulesPage() {
         );
 
         setError(
-          err?.message ||
+          err?.response
+            ?.data
+            ?.detail ||
+            err?.message ||
             "Unable to save exam schedule."
         );
       } finally {
@@ -763,9 +735,13 @@ export default function AdminExamSchedulesPage() {
         );
 
         await loadSchedules();
+
       } catch (err) {
         setError(
-          err?.message ||
+          err?.response
+            ?.data
+            ?.detail ||
+            err?.message ||
             "Unable to delete schedule."
         );
       }
@@ -837,9 +813,7 @@ export default function AdminExamSchedulesPage() {
 
   return (
     <AdminShell>
-
       <div className="mx-auto max-w-[1500px]">
-
 
         {/* HEADER */}
 
@@ -852,9 +826,8 @@ export default function AdminExamSchedulesPage() {
             </h1>
 
             <p className="mt-1 text-sm text-gray-500">
-              Manage class-wise subject
-              examination dates, times
-              and rooms.
+              Manage class-wise subject examination dates,
+              times and rooms.
             </p>
 
           </div>
@@ -863,13 +836,24 @@ export default function AdminExamSchedulesPage() {
           <button
             type="button"
             onClick={openAddModal}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0075FF] px-5 text-sm font-semibold text-white transition hover:bg-[#0066de]"
+            className="
+              inline-flex
+              h-11
+              items-center
+              justify-center
+              gap-2
+              rounded-xl
+              bg-[#0075FF]
+              px-5
+              text-sm
+              font-semibold
+              text-white
+              transition
+              hover:bg-[#0066de]
+            "
           >
-
             <Plus size={18} />
-
             Add Schedule
-
           </button>
 
         </div>
@@ -879,7 +863,20 @@ export default function AdminExamSchedulesPage() {
 
         {success && (
 
-          <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+          <div
+            className="
+              mb-5
+              rounded-xl
+              border
+              border-emerald-200
+              bg-emerald-50
+              px-4
+              py-3
+              text-sm
+              font-medium
+              text-emerald-700
+            "
+          >
             {success}
           </div>
 
@@ -891,7 +888,20 @@ export default function AdminExamSchedulesPage() {
         {error &&
           !modalOpen && (
 
-            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <div
+              className="
+                mb-5
+                rounded-xl
+                border
+                border-red-200
+                bg-red-50
+                px-4
+                py-3
+                text-sm
+                font-medium
+                text-red-700
+              "
+            >
               {error}
             </div>
 
@@ -903,7 +913,6 @@ export default function AdminExamSchedulesPage() {
         <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
 
           <div className="grid gap-3 lg:grid-cols-[2fr_1fr_1fr]">
-
 
             <div className="relative">
 
@@ -941,7 +950,7 @@ export default function AdminExamSchedulesPage() {
                 All Exams
               </option>
 
-              {exams.map(
+              {examOptions.map(
                 (exam) => (
 
                   <option
@@ -971,7 +980,7 @@ export default function AdminExamSchedulesPage() {
                 All Classes
               </option>
 
-              {classes.map(
+              {classOptions.map(
                 (item) => (
 
                   <option
@@ -1009,7 +1018,8 @@ export default function AdminExamSchedulesPage() {
 
             </div>
 
-          ) : schedules.length === 0 ? (
+          ) : schedules.length ===
+            0 ? (
 
             <div className="flex min-h-[350px] flex-col items-center justify-center p-8 text-center">
 
@@ -1026,8 +1036,7 @@ export default function AdminExamSchedulesPage() {
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
-                Create your first exam
-                schedule.
+                Create your first exam schedule.
               </p>
 
             </div>
@@ -1085,7 +1094,6 @@ export default function AdminExamSchedulesPage() {
                         className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
                       >
 
-
                         <td className="px-5 py-4">
 
                           <div className="flex items-center gap-3">
@@ -1130,9 +1138,11 @@ export default function AdminExamSchedulesPage() {
 
 
                         <td className="px-5 py-4 text-sm text-slate-600">
+
                           {formatDate(
                             item.exam_date
                           )}
+
                         </td>
 
 
@@ -1169,11 +1179,9 @@ export default function AdminExamSchedulesPage() {
                               }
                               className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-blue-50 hover:text-[#0075FF]"
                             >
-
                               <Pencil
                                 size={16}
                               />
-
                             </button>
 
 
@@ -1186,11 +1194,9 @@ export default function AdminExamSchedulesPage() {
                               }
                               className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-red-50 hover:text-red-600"
                             >
-
                               <Trash2
                                 size={16}
                               />
-
                             </button>
 
                           </div>
@@ -1215,7 +1221,9 @@ export default function AdminExamSchedulesPage() {
       </div>
 
 
-      {/* MODAL */}
+      {/* ==================================================
+          ADD / EDIT MODAL
+      ================================================== */}
 
       {modalOpen && (
 
@@ -1223,22 +1231,18 @@ export default function AdminExamSchedulesPage() {
 
           <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
 
-
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
 
               <div>
 
                 <h2 className="text-lg font-bold text-slate-900">
-
                   {editingSchedule
                     ? "Edit Exam Schedule"
                     : "Add Exam Schedule"}
-
                 </h2>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  Set exam, class, subject,
-                  date and time.
+                  Set exam, class, subject, date and time.
                 </p>
 
               </div>
@@ -1260,7 +1264,6 @@ export default function AdminExamSchedulesPage() {
               className="p-6"
             >
 
-
               {error && (
 
                 <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -1271,7 +1274,6 @@ export default function AdminExamSchedulesPage() {
 
 
               <div className="grid gap-5 md:grid-cols-2">
-
 
                 {/* EXAM */}
 
@@ -1408,7 +1410,7 @@ export default function AdminExamSchedulesPage() {
                 </div>
 
 
-                {/* START */}
+                {/* START TIME */}
 
                 <div>
 
@@ -1427,7 +1429,7 @@ export default function AdminExamSchedulesPage() {
                 </div>
 
 
-                {/* END */}
+                {/* END TIME */}
 
                 <div>
 
@@ -1492,7 +1494,6 @@ export default function AdminExamSchedulesPage() {
                     "Saving..."
                   ) : (
                     <>
-
                       {editingSchedule ? (
                         <Pencil
                           size={17}
@@ -1506,7 +1507,6 @@ export default function AdminExamSchedulesPage() {
                       {editingSchedule
                         ? "Update Schedule"
                         : "Save Schedule"}
-
                     </>
                   )}
 
