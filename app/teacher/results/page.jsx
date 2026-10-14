@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 
 import {
   useEffect,
@@ -85,6 +86,7 @@ function calculateGrade(
 // =========================================================
 
 export default function TeacherResultsPage() {
+  const searchParams = useSearchParams();
   const [classes, setClasses] =
     useState([]);
 
@@ -167,21 +169,29 @@ export default function TeacherResultsPage() {
         // Default class
         // -----------------------------------------
 
-        if (
-          safeClasses.length > 0
-        ) {
-          const firstClass =
-            safeClasses[0];
+        const queryClassId =
+        searchParams.get("class_id");
 
+        const selectedClass =
+          safeClasses.find(
+            (item) =>
+              String(item.id) ===
+              String(queryClassId)
+          );
+
+        const initialClass =
+          selectedClass ||
+          safeClasses[0];
+
+        if (initialClass) {
           setSelectedClassId(
-            String(firstClass.id)
+            String(initialClass.id)
           );
 
           setSubject(
-            firstClass.subject || ""
+            initialClass.subject || ""
           );
         }
-
         // -----------------------------------------
         // Default exam
         // -----------------------------------------
@@ -214,7 +224,7 @@ export default function TeacherResultsPage() {
 
     loadInitialData();
 
-  }, []);
+  }, [searchParams]);
 
 
   // =========================================================

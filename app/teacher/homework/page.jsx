@@ -1,5 +1,5 @@
 "use client";
-
+import { useSearchParams } from "next/navigation";
 import {
   useEffect,
   useState,
@@ -40,6 +40,7 @@ function getToday() {
 
 
 export default function TeacherHomeworkPage() {
+  const searchParams = useSearchParams();
   const [classes, setClasses] =
     useState([]);
 
@@ -97,10 +98,18 @@ export default function TeacherHomeworkPage() {
 
         setClasses(classList);
 
-        if (classList.length > 0) {
-          setSelectedClassId(
-            String(classList[0].id)
-          );
+        const queryClassId = searchParams.get("class_id");
+
+        const assignedClassExists = classList.some(
+          (schoolClass) =>
+            String(schoolClass.id) ===
+            String(queryClassId)
+        );
+
+        if (queryClassId && assignedClassExists) {
+          setSelectedClassId(String(queryClassId));
+        } else if (classList.length > 0) {
+          setSelectedClassId(String(classList[0].id));
         }
 
       } catch (error) {
@@ -118,7 +127,7 @@ export default function TeacherHomeworkPage() {
 
     loadClasses();
 
-  }, []);
+ }, [searchParams]);
 
 
   // =========================================

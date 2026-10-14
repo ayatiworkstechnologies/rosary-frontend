@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 
 import {
   useEffect,
@@ -43,6 +44,7 @@ function getToday() {
 
 
 export default function TeacherAttendancePage() {
+  const searchParams = useSearchParams();
   const [classes, setClasses] =
     useState([]);
 
@@ -89,10 +91,18 @@ export default function TeacherAttendancePage() {
 
         setClasses(data);
 
-        if (data.length > 0) {
-          setSelectedClassId(
-            String(data[0].id)
+        const queryClassId = searchParams.get("class_id");
+
+        const assignedClassExists = data.some(
+            (schoolClass) =>
+              String(schoolClass.id) ===
+              String(queryClassId)
           );
+
+          if (queryClassId && assignedClassExists) {
+            setSelectedClassId(String(queryClassId));
+          } else if (data.length > 0) {
+            setSelectedClassId(String(data[0].id));
         }
 
       } catch (error) {
@@ -109,7 +119,7 @@ export default function TeacherAttendancePage() {
     };
 
     loadClasses();
-  }, []);
+}, [searchParams]);  
 
 
   // =========================================

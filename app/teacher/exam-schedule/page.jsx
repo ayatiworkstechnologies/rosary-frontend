@@ -1,5 +1,5 @@
 "use client";
-
+import { useSearchParams } from "next/navigation";
 import {
   useEffect,
   useMemo,
@@ -94,6 +94,7 @@ function formatTime(
 // =========================================================
 
 export default function TeacherExamSchedulePage() {
+  const searchParams = useSearchParams();
   const [
     classes,
     setClasses,
@@ -181,16 +182,30 @@ export default function TeacherExamSchedulePage() {
           );
 
 
-          if (
-            safeClasses.length >
-            0
-          ) {
-            setSelectedClassId(
-              String(
-                safeClasses[0].id
-              )
-            );
-          }
+          const queryClassId =
+          searchParams.get("class_id");
+
+        const assignedClassExists =
+          safeClasses.some(
+            (item) =>
+              String(item.id) ===
+              String(queryClassId)
+          );
+
+        if (
+          queryClassId &&
+          assignedClassExists
+        ) {
+          setSelectedClassId(
+            String(queryClassId)
+          );
+        } else if (
+          safeClasses.length > 0
+        ) {
+          setSelectedClassId(
+            String(safeClasses[0].id)
+          );
+        }
 
 
           if (
@@ -225,7 +240,7 @@ export default function TeacherExamSchedulePage() {
 
     loadInitial();
 
-  }, []);
+  }, [searchParams]);
 
 
   // =======================================================
