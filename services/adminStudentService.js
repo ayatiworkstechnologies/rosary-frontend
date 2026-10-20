@@ -68,6 +68,20 @@ export async function getAdminStudents(
     );
   }
 
+  if (params.page) {
+  query.set(
+    "page",
+    params.page
+  );
+}
+
+if (params.page_size) {
+  query.set(
+    "page_size",
+    params.page_size
+  );
+}
+
   const queryString =
     query.toString();
 

@@ -6,28 +6,41 @@ import { useRouter } from "next/navigation";
 import AdminSidebar from "./AdminSidebar";
 import AdminHeader from "./AdminHeader";
 
-export default function AdminShell({ children }) {
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false);
+export default function AdminShell({
+  children,
+}) {
+  const [
+    sidebarOpen,
+    setSidebarOpen,
+  ] = useState(false);
 
   const router = useRouter();
 
-  // ============================================
-  // LOGOUT
-  // ============================================
-
   const handleLogout = () => {
-    // Clear local storage
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("current_user");
-    localStorage.removeItem("user_role");
+    localStorage.removeItem(
+      "access_token"
+    );
 
-    // Clear session storage
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("current_user");
-    sessionStorage.removeItem("user_role");
+    localStorage.removeItem(
+      "current_user"
+    );
 
-    // Clear parent-specific stored login if present
+    localStorage.removeItem(
+      "user_role"
+    );
+
+    sessionStorage.removeItem(
+      "access_token"
+    );
+
+    sessionStorage.removeItem(
+      "current_user"
+    );
+
+    sessionStorage.removeItem(
+      "user_role"
+    );
+
     localStorage.removeItem(
       "parent_login_admission_no"
     );
@@ -43,8 +56,7 @@ export default function AdminShell({ children }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
-
+    <div className="min-h-screen bg-[#F7F9FC]">
       {/* Sidebar */}
       <AdminSidebar
         open={sidebarOpen}
@@ -54,22 +66,46 @@ export default function AdminShell({ children }) {
         onLogout={handleLogout}
       />
 
-      {/* Main Section */}
-      <div className="min-w-0 flex-1 bg-white">
-
+      {/* Main Area */}
+      <div
+        className="
+          min-h-screen
+          lg:ml-[280px]
+        "
+      >
         {/* Header */}
         <AdminHeader
           onMenuClick={() =>
             setSidebarOpen(true)
           }
-          onLogout={handleLogout}
+          onLogout={
+            handleLogout
+          }
         />
 
-        {/* Dashboard / Page Content */}
-        <main className="min-h-[calc(100vh-76px)] bg-white p-4 md:p-6 lg:p-8">
-          {children}
+        {/* Page Content */}
+        <main
+          className="
+            min-h-screen
+            bg-[#F7F9FC]
+            pt-[76px]
+          "
+        >
+          <div
+            className="
+              mx-auto
+              w-full
+              max-w-[1700px]
+              p-4
+              sm:p-5
+              md:p-6
+              lg:p-7
+              xl:p-8
+            "
+          >
+            {children}
+          </div>
         </main>
-
       </div>
     </div>
   );

@@ -97,10 +97,7 @@ export default function AdminSidebar({
 
   return (
     <>
-      {/* =========================================
-          MOBILE OVERLAY
-      ========================================== */}
-
+      {/* MOBILE OVERLAY */}
       {open && (
         <div
           onClick={onClose}
@@ -108,18 +105,16 @@ export default function AdminSidebar({
         />
       )}
 
-      {/* =========================================
-          SIDEBAR
-      ========================================== */}
-
+      {/* SIDEBAR */}
       <aside
         className={`
           fixed left-0 top-0 z-50
-          flex h-screen w-[280px] flex-col
-          bg-[#08679F]
+          flex h-screen w-[260px] flex-col
+          bg-[#0B6C9F]
           text-white
           transition-transform duration-300
-          lg:static lg:translate-x-0
+          ease-in-out
+          lg:translate-x-0
           ${
             open
               ? "translate-x-0"
@@ -127,59 +122,31 @@ export default function AdminSidebar({
           }
         `}
       >
-        {/* =========================================
-            SIDEBAR HEADER
-        ========================================== */}
-
-        <div
-          className="
-            flex h-[76px] shrink-0
-            items-center justify-between
-            border-b border-white/10
-            px-6
-          "
-        >
+        {/* BRAND */}
+        <div className="flex h-[76px] shrink-0 items-center justify-between border-b border-white/10 px-5">
           <div>
-            <h1 className="text-xl font-bold text-white">
+            <h1 className="text-[22px] font-bold leading-none text-white">
               Rosary
             </h1>
 
-            <p className="mt-0.5 text-xs text-white/70">
+            <p className="mt-2 text-[12px] font-medium text-white/65">
               Admin Portal
             </p>
           </div>
 
-          {/* Mobile Close */}
           <button
             type="button"
             onClick={onClose}
-            className="
-              flex h-9 w-9
-              items-center justify-center
-              rounded-lg
-              text-white
-              transition
-              hover:bg-white/10
-              lg:hidden
-            "
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-white transition hover:bg-white/10 lg:hidden"
             aria-label="Close sidebar"
           >
-            <X size={21} />
+            <X size={20} />
           </button>
         </div>
 
-        {/* =========================================
-            NAVIGATION
-        ========================================== */}
-
-        <nav
-          className="
-            min-h-0 flex-1
-            overflow-y-auto
-            py-3
-          "
-        >
-          <div>
+        {/* MENU */}
+        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+          <div className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
 
@@ -195,28 +162,28 @@ export default function AdminSidebar({
                   href={item.href}
                   onClick={onClose}
                   className={`
-                    flex min-h-[52px]
-                    items-center gap-4
-                    px-7
-                    text-[16px]
+                    flex h-[46px]
+                    items-center gap-3
+                    rounded-xl
+                    px-4
+                    text-[15px]
                     font-medium
-                    transition-all
-                    duration-200
+                    transition-all duration-200
 
                     ${
                       active
-                        ? "bg-[#087EF5] text-white"
-                        : "text-white hover:bg-white/10"
+                        ? "bg-[#1184F5] text-white shadow-sm"
+                        : "text-white/90 hover:bg-white/10 hover:text-white"
                     }
                   `}
                 >
                   <Icon
-                    size={23}
+                    size={20}
                     strokeWidth={2}
                     className="shrink-0"
                   />
 
-                  <span>
+                  <span className="truncate">
                     {item.name}
                   </span>
                 </Link>
@@ -225,47 +192,29 @@ export default function AdminSidebar({
           </div>
         </nav>
 
-        {/* =========================================
-            LOGOUT
-        ========================================== */}
-
-        <div
-          className="
-            shrink-0
-            border-t border-white/10
-            bg-[#08679F]
-            px-7 py-5
-          "
-        >
+        {/* LOGOUT */}
+        <div className="shrink-0 border-t border-white/10 bg-[#0B6C9F] p-3">
           <button
             type="button"
             onClick={onLogout}
             className="
-              flex w-full
-              items-center gap-4
-              text-[16px]
+              flex h-[46px]
+              w-full
+              items-center gap-3
+              rounded-xl
+              px-4
+              text-[15px]
               font-medium
               text-white
               transition
-              hover:opacity-80
+              hover:bg-white/10
             "
           >
-            {/* Logout Circle */}
-            <div
-              className="
-                flex h-10 w-10
-                shrink-0
-                items-center justify-center
-                rounded-full
-                border border-white/40
-                bg-[#064C78]
-              "
-            >
-              <LogOut
-                size={20}
-                strokeWidth={2}
-              />
-            </div>
+            <LogOut
+              size={19}
+              strokeWidth={2}
+              className="shrink-0"
+            />
 
             <span>
               Logout

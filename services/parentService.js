@@ -84,7 +84,11 @@ export async function getParentChildAttendance(
 
 export async function getParentChildHomework(
   studentId,
-  search = ""
+  {
+    page = 1,
+    page_size = 10,
+    search = "",
+  } = {}
 ) {
   if (!studentId) {
     throw new Error(
@@ -92,7 +96,10 @@ export async function getParentChildHomework(
     );
   }
 
-  const params = {};
+  const params = {
+    page,
+    page_size,
+  };
 
   if (search.trim()) {
     params.search =

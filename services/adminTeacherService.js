@@ -7,7 +7,10 @@ function getToken() {
     return null;
   }
 
-  return localStorage.getItem("access_token");
+  return (
+    localStorage.getItem("access_token") ||
+    sessionStorage.getItem("access_token")
+  );
 }
 
 function getHeaders() {
@@ -30,6 +33,19 @@ async function handleResponse(
     .json()
     .catch(() => null);
 
+  if (response.status === 401) {
+    throw new Error(
+      "Your login session has expired. Please login again."
+    );
+  }
+
+  if (response.status === 403) {
+    throw new Error(
+      data?.detail ||
+        "You do not have permission to perform this action."
+    );
+  }
+
   if (!response.ok) {
     throw new Error(
       data?.detail ||
@@ -46,9 +62,56 @@ async function handleResponse(
 // TEACHERS
 // ======================================================
 
-export async function getAdminTeachers() {
+export async function getAdminTeachers(
+  filters = {}
+) {
+  const params =
+    new URLSearchParams();
+
+  if (filters.search) {
+    params.set(
+      "search",
+      filters.search
+    );
+  }
+
+  if (
+    filters.is_active !==
+    undefined
+  ) {
+    params.set(
+      "is_active",
+      String(
+        filters.is_active
+      )
+    );
+  }
+
+  if (filters.page) {
+    params.set(
+      "page",
+      String(filters.page)
+    );
+  }
+
+  if (filters.page_size) {
+    params.set(
+      "page_size",
+      String(
+        filters.page_size
+      )
+    );
+  }
+
+  const query =
+    params.toString();
+
+  const url = query
+    ? `${API_URL}/admin/teachers?${query}`
+    : `${API_URL}/admin/teachers`;
+
   const response = await fetch(
-    `${API_URL}/admin/teachers`,
+    url,
     {
       method: "GET",
       headers: getHeaders(),
@@ -63,7 +126,9 @@ export async function getAdminTeachers() {
 }
 
 
-export async function getAdminTeacher(id) {
+export async function getAdminTeacher(
+  id
+) {
   const response = await fetch(
     `${API_URL}/admin/teachers/${id}`,
     {

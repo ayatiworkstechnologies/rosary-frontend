@@ -11,19 +11,11 @@ import {
 import {
 
   Award,
-
   BookOpen,
-
   ChevronDown,
-
   GraduationCap,
-
   Loader2,
-
-  School,
-
   TrendingUp,
-
   UserRound,
 
 } from "lucide-react";
@@ -43,6 +35,12 @@ import {
   getParentChildResults,
 
 } from "@/services/parentService";
+
+function getChildStudentId(child) {
+
+  return child?.student_id ?? child?.id ?? "";
+
+}
 
 // =========================================================
 
@@ -180,35 +178,63 @@ export default function ParentResultsPage() {
 
           );
 
-          if (
+          const requestedChild =
 
-            requestedStudentId &&
+            requestedStudentId
 
-            childList.some(
+              ? childList.find(
 
-              (child) =>
+                  (child) =>
 
-                String(
+                    String(
 
-                  child.id
+                      getChildStudentId(
 
-                ) ===
+                        child
 
-                String(
+                      )
 
-                  requestedStudentId
+                    ) ===
+
+                      String(
+
+                        requestedStudentId
+
+                      )
+
+                ) ||
+
+                childList.find(
+
+                  (child) =>
+
+                    String(
+
+                      child.id ?? ""
+
+                    ) ===
+
+                      String(
+
+                        requestedStudentId
+
+                      )
 
                 )
 
-            )
+              : null;
 
-          ) {
+          if (requestedChild) {
 
             setSelectedStudentId(
 
               String(
 
-                requestedStudentId
+                getChildStudentId(
+
+                  requestedChild
+
+                )
 
               )
 
@@ -262,7 +288,11 @@ export default function ParentResultsPage() {
 
               String(
 
-                selectedChild.id
+                getChildStudentId(
+
+                  selectedChild
+
+                )
 
               )
 
@@ -720,9 +750,25 @@ export default function ParentResultsPage() {
 
               <option
 
-                key={child.id}
+                key={
 
-                value={child.id}
+                  getChildStudentId(
+
+                    child
+
+                  )
+
+                }
+
+                value={
+
+                  getChildStudentId(
+
+                    child
+
+                  )
+
+                }
 
               >
 

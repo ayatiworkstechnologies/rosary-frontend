@@ -43,10 +43,10 @@
       ) {
 
         const token =
-          localStorage.getItem(
+          sessionStorage.getItem(
             "access_token"
           ) ||
-          sessionStorage.getItem(
+          localStorage.getItem(
             "access_token"
           );
 

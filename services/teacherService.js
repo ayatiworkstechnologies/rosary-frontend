@@ -113,7 +113,14 @@ export async function saveTeacherAttendance(
 // =========================================================
 
 export async function getTeacherHomework(
-  classId
+  classId,
+  {
+    page = 1,
+    page_size = 20,
+    search = "",
+    subject = "",
+    is_active,
+  } = {}
 ) {
   if (!classId) {
     throw new Error(
@@ -121,8 +128,33 @@ export async function getTeacherHomework(
     );
   }
 
+  const params = {
+    page,
+    page_size,
+  };
+
+  if (search.trim()) {
+    params.search =
+      search.trim();
+  }
+
+  if (subject.trim()) {
+    params.subject =
+      subject.trim();
+  }
+
+  if (
+    is_active !== undefined
+  ) {
+    params.is_active =
+      is_active;
+  }
+
   const response = await api.get(
-    `/teacher/classes/${classId}/homework`
+    `/teacher/classes/${classId}/homework`,
+    {
+      params,
+    }
   );
 
   return response.data;

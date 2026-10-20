@@ -7,7 +7,10 @@ function getToken() {
     return null;
   }
 
-  return localStorage.getItem("access_token");
+  return (
+    localStorage.getItem("access_token") ||
+    sessionStorage.getItem("access_token")
+  );
 }
 
 function getHeaders() {
@@ -15,7 +18,6 @@ function getHeaders() {
 
   return {
     "Content-Type": "application/json",
-
     ...(token && {
       Authorization: `Bearer ${token}`,
     }),
@@ -42,10 +44,62 @@ async function handleResponse(
 }
 
 
+// ======================================================
 // GET PARENTS
-export async function getAdminParents() {
+// ======================================================
+
+export async function getAdminParents(
+  filters = {}
+) {
+  const params =
+    new URLSearchParams();
+
+  if (filters.search) {
+    params.set(
+      "search",
+      filters.search
+    );
+  }
+
+  if (
+    filters.is_active !==
+    undefined
+  ) {
+    params.set(
+      "is_active",
+      String(
+        filters.is_active
+      )
+    );
+  }
+
+  if (filters.page) {
+    params.set(
+      "page",
+      String(
+        filters.page
+      )
+    );
+  }
+
+  if (filters.page_size) {
+    params.set(
+      "page_size",
+      String(
+        filters.page_size
+      )
+    );
+  }
+
+  const query =
+    params.toString();
+
+  const url = query
+    ? `${API_URL}/admin/parents?${query}`
+    : `${API_URL}/admin/parents`;
+
   const response = await fetch(
-    `${API_URL}/admin/parents`,
+    url,
     {
       method: "GET",
       headers: getHeaders(),
@@ -60,10 +114,59 @@ export async function getAdminParents() {
 }
 
 
-// GET ALL LINKS
-export async function getAdminParentLinks() {
+// ======================================================
+// GET PARENT LINKS
+// ======================================================
+
+export async function getAdminParentLinks(
+  filters = {}
+) {
+  const params =
+    new URLSearchParams();
+
+  if (filters.search) {
+    params.set(
+      "search",
+      filters.search
+    );
+  }
+
+  if (filters.class_id) {
+    params.set(
+      "class_id",
+      String(
+        filters.class_id
+      )
+    );
+  }
+
+  if (filters.page) {
+    params.set(
+      "page",
+      String(
+        filters.page
+      )
+    );
+  }
+
+  if (filters.page_size) {
+    params.set(
+      "page_size",
+      String(
+        filters.page_size
+      )
+    );
+  }
+
+  const query =
+    params.toString();
+
+  const url = query
+    ? `${API_URL}/admin/parent-links?${query}`
+    : `${API_URL}/admin/parent-links`;
+
   const response = await fetch(
-    `${API_URL}/admin/parent-links`,
+    url,
     {
       method: "GET",
       headers: getHeaders(),
@@ -78,8 +181,19 @@ export async function getAdminParentLinks() {
 }
 
 
-// GET SINGLE LINK
-export async function getAdminParentLink(id) {
+// ======================================================
+// GET SINGLE PARENT LINK
+// ======================================================
+
+export async function getAdminParentLink(
+  id
+) {
+  if (!id) {
+    throw new Error(
+      "Parent link ID is required."
+    );
+  }
+
   const response = await fetch(
     `${API_URL}/admin/parent-links/${id}`,
     {
@@ -96,10 +210,19 @@ export async function getAdminParentLink(id) {
 }
 
 
-// CREATE LINK
+// ======================================================
+// CREATE PARENT LINK
+// ======================================================
+
 export async function createAdminParentLink(
   data
 ) {
+  if (!data) {
+    throw new Error(
+      "Parent link data is required."
+    );
+  }
+
   const response = await fetch(
     `${API_URL}/admin/parent-links`,
     {
@@ -116,11 +239,26 @@ export async function createAdminParentLink(
 }
 
 
-// UPDATE LINK
+// ======================================================
+// UPDATE PARENT LINK
+// ======================================================
+
 export async function updateAdminParentLink(
   id,
   data
 ) {
+  if (!id) {
+    throw new Error(
+      "Parent link ID is required."
+    );
+  }
+
+  if (!data) {
+    throw new Error(
+      "Parent link data is required."
+    );
+  }
+
   const response = await fetch(
     `${API_URL}/admin/parent-links/${id}`,
     {
@@ -137,10 +275,19 @@ export async function updateAdminParentLink(
 }
 
 
-// DELETE / UNLINK
+// ======================================================
+// DELETE / UNLINK PARENT
+// ======================================================
+
 export async function deleteAdminParentLink(
   id
 ) {
+  if (!id) {
+    throw new Error(
+      "Parent link ID is required."
+    );
+  }
+
   const response = await fetch(
     `${API_URL}/admin/parent-links/${id}`,
     {

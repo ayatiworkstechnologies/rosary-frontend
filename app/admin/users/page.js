@@ -6,6 +6,8 @@ import {
 } from "react";
 
 import {
+  ChevronLeft,
+  ChevronRight,
   Eye,
   EyeOff,
   KeyRound,
@@ -29,7 +31,6 @@ import {
   updateAdminUserStatus,
 } from "@/lib/admin-users";
 
-
 // ======================================================
 // EMPTY FORM
 // ======================================================
@@ -43,14 +44,12 @@ const EMPTY_FORM = {
   is_active: true,
 };
 
-
 // ======================================================
 // COMPONENT
 // ======================================================
 
 export default function AdminUsersPage() {
-  const [users, setUsers] =
-    useState([]);
+  const [users, setUsers] = useState([]);
 
   const [loading, setLoading] =
     useState(true);
@@ -64,6 +63,10 @@ export default function AdminUsersPage() {
   const [success, setSuccess] =
     useState("");
 
+  // ======================================================
+  // FILTERS
+  // ======================================================
+
   const [search, setSearch] =
     useState("");
 
@@ -74,6 +77,37 @@ export default function AdminUsersPage() {
     statusFilter,
     setStatusFilter,
   ] = useState("");
+
+  // ======================================================
+  // PAGINATION
+  // ======================================================
+
+  const [page, setPage] =
+    useState(1);
+
+  const [pageSize, setPageSize] =
+    useState(25);
+
+  const [
+    pagination,
+    setPagination,
+  ] = useState({
+    page: 1,
+    page_size: 25,
+    total: 0,
+    total_pages: 0,
+    has_next: false,
+    has_previous: false,
+  });
+
+  const [
+    refreshKey,
+    setRefreshKey,
+  ] = useState(0);
+
+  // ======================================================
+  // ADD / EDIT MODAL
+  // ======================================================
 
   const [
     modalOpen,
@@ -95,6 +129,10 @@ export default function AdminUsersPage() {
     setShowPassword,
   ] = useState(false);
 
+  // ======================================================
+  // PASSWORD MODAL
+  // ======================================================
+
   const [
     passwordModalOpen,
     setPasswordModalOpen,
@@ -115,12 +153,15 @@ export default function AdminUsersPage() {
     setShowNewPassword,
   ] = useState(false);
 
-
   // ======================================================
-  // NORMALIZE API RESPONSE
+  // NORMALIZE USERS
   // ======================================================
 
   const normalizeUsers = (data) => {
+    if (Array.isArray(data?.data)) {
+      return data.data;
+    }
+
     if (Array.isArray(data)) {
       return data;
     }
@@ -136,82 +177,176 @@ export default function AdminUsersPage() {
     return [];
   };
 
-
   // ======================================================
   // LOAD USERS
   // ======================================================
 
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const filters = {};
-
-      if (search.trim()) {
-        filters.search =
-          search.trim();
-      }
-
-      if (roleFilter) {
-        filters.role =
-          roleFilter;
-      }
-
-      if (statusFilter !== "") {
-        filters.is_active =
-          statusFilter === "active";
-      }
-
-      const data =
-        await getAdminUsers(
-          filters
-        );
-
-      setUsers(
-        normalizeUsers(data)
-      );
-    } catch (err) {
-      console.error(
-        "Users loading error:",
-        err
-      );
-
-      setError(
-        err?.message ||
-          "Unable to load users."
-      );
-
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  // ======================================================
-  // AUTO LOAD
-  // ======================================================
-
   useEffect(() => {
-    const timer =
-      setTimeout(() => {
-        loadUsers();
-      }, 300);
+    const timer = setTimeout(
+      async () => {
+        try {
+          setLoading(true);
+          setError("");
+
+          const filters = {
+            page,
+            page_size: pageSize,
+          };
+
+          if (search.trim()) {
+            filters.search =
+              search.trim();
+          }
+
+          if (roleFilter) {
+            filters.role =
+              roleFilter;
+          }
+
+          if (
+            statusFilter !== ""
+          ) {
+            filters.is_active =
+              statusFilter ===
+              "active";
+          }
+
+          const data =
+            await getAdminUsers(
+              filters
+            );
+
+          const userList =
+            normalizeUsers(data);
+
+          setUsers(userList);
+
+          setPagination({
+            page:
+              data?.page ??
+              data?.pagination
+                ?.page ??
+              page,
+
+            page_size:
+              data?.page_size ??
+              data?.pagination
+                ?.page_size ??
+              pageSize,
+
+            total:
+              data?.total ??
+              data?.pagination
+                ?.total ??
+              userList.length,
+
+            total_pages:
+              data?.total_pages ??
+              data?.pagination
+                ?.total_pages ??
+              1,
+
+            has_next:
+              data?.has_next ??
+              data?.pagination
+                ?.has_next ??
+              false,
+
+            has_previous:
+              data?.has_previous ??
+              data?.pagination
+                ?.has_previous ??
+              false,
+          });
+        } catch (err) {
+          console.error(
+            "Users loading error:",
+            err
+          );
+
+          setError(
+            err?.message ||
+              "Unable to load users."
+          );
+
+          setUsers([]);
+
+          setPagination({
+            page: 1,
+            page_size:
+              pageSize,
+            total: 0,
+            total_pages: 0,
+            has_next: false,
+            has_previous:
+              false,
+          });
+        } finally {
+          setLoading(false);
+        }
+      },
+      300
+    );
 
     return () =>
       clearTimeout(timer);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     search,
     roleFilter,
     statusFilter,
+    page,
+    pageSize,
+    refreshKey,
   ]);
 
+  // ======================================================
+  // FILTER HANDLERS
+  // ======================================================
+
+  const handleSearchChange = (
+    event
+  ) => {
+    setSearch(
+      event.target.value
+    );
+
+    setPage(1);
+  };
+
+  const handleRoleChange = (
+    event
+  ) => {
+    setRoleFilter(
+      event.target.value
+    );
+
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (
+    event
+  ) => {
+    setStatusFilter(
+      event.target.value
+    );
+
+    setPage(1);
+  };
+
+  const handlePageSizeChange = (
+    event
+  ) => {
+    setPageSize(
+      Number(
+        event.target.value
+      )
+    );
+
+    setPage(1);
+  };
 
   // ======================================================
-  // HANDLE FORM CHANGE
+  // FORM CHANGE
   // ======================================================
 
   const handleChange = (
@@ -234,7 +369,6 @@ export default function AdminUsersPage() {
     }));
   };
 
-
   // ======================================================
   // ADD USER
   // ======================================================
@@ -253,7 +387,6 @@ export default function AdminUsersPage() {
 
     setModalOpen(true);
   };
-
 
   // ======================================================
   // EDIT USER
@@ -277,11 +410,14 @@ export default function AdminUsersPage() {
       password: "",
 
       role:
-        user?.role ||
-        "PARENT",
+        String(
+          user?.role ||
+            "PARENT"
+        ).toUpperCase(),
 
       is_active:
-        user?.is_active !== false,
+        user?.is_active !==
+        false,
     });
 
     setError("");
@@ -289,7 +425,6 @@ export default function AdminUsersPage() {
 
     setModalOpen(true);
   };
-
 
   // ======================================================
   // CLOSE MODAL
@@ -311,7 +446,6 @@ export default function AdminUsersPage() {
     });
   };
 
-
   // ======================================================
   // SAVE USER
   // ======================================================
@@ -323,10 +457,13 @@ export default function AdminUsersPage() {
       setError("");
       setSuccess("");
 
-      if (!form.name.trim()) {
+      if (
+        !form.name.trim()
+      ) {
         setError(
           "Full name is required."
         );
+
         return;
       }
 
@@ -336,6 +473,7 @@ export default function AdminUsersPage() {
         setError(
           "Username is required."
         );
+
         return;
       }
 
@@ -346,16 +484,19 @@ export default function AdminUsersPage() {
         setError(
           "Username must contain at least 3 characters."
         );
+
         return;
       }
 
       if (
         !editingUser &&
-        form.password.length < 8
+        form.password.length <
+          8
       ) {
         setError(
           "Password must contain at least 8 characters."
         );
+
         return;
       }
 
@@ -370,16 +511,14 @@ export default function AdminUsersPage() {
                 form.name.trim(),
 
               username:
-                form.username
-                  .trim(),
+                form.username.trim(),
 
               email:
                 form.email.trim()
                   ? form.email.trim()
                   : null,
 
-              role:
-                form.role,
+              role: form.role,
 
               is_active:
                 form.is_active,
@@ -395,8 +534,7 @@ export default function AdminUsersPage() {
               form.name.trim(),
 
             username:
-              form.username
-                .trim(),
+              form.username.trim(),
 
             email:
               form.email.trim()
@@ -419,14 +557,16 @@ export default function AdminUsersPage() {
         }
 
         setModalOpen(false);
-
         setEditingUser(null);
 
         setForm({
           ...EMPTY_FORM,
         });
 
-        await loadUsers();
+        setRefreshKey(
+          (previous) =>
+            previous + 1
+        );
       } catch (err) {
         console.error(
           "User save error:",
@@ -441,7 +581,6 @@ export default function AdminUsersPage() {
         setSaving(false);
       }
     };
-
 
   // ======================================================
   // STATUS CHANGE
@@ -464,7 +603,10 @@ export default function AdminUsersPage() {
             : "User activated successfully."
         );
 
-        await loadUsers();
+        setRefreshKey(
+          (previous) =>
+            previous + 1
+        );
       } catch (err) {
         setError(
           err?.message ||
@@ -472,7 +614,6 @@ export default function AdminUsersPage() {
         );
       }
     };
-
 
   // ======================================================
   // PASSWORD MODAL
@@ -485,7 +626,9 @@ export default function AdminUsersPage() {
 
     setNewPassword("");
 
-    setShowNewPassword(false);
+    setShowNewPassword(
+      false
+    );
 
     setError("");
     setSuccess("");
@@ -494,7 +637,6 @@ export default function AdminUsersPage() {
       true
     );
   };
-
 
   const closePasswordModal =
     () => {
@@ -511,7 +653,6 @@ export default function AdminUsersPage() {
       setError("");
     };
 
-
   // ======================================================
   // RESET PASSWORD
   // ======================================================
@@ -524,11 +665,13 @@ export default function AdminUsersPage() {
       setSuccess("");
 
       if (
-        newPassword.length < 8
+        newPassword.length <
+        8
       ) {
         setError(
           "Password must contain at least 8 characters."
         );
+
         return;
       }
 
@@ -565,7 +708,6 @@ export default function AdminUsersPage() {
       }
     };
 
-
   // ======================================================
   // DELETE USER
   // ======================================================
@@ -591,7 +733,20 @@ export default function AdminUsersPage() {
           "User deleted successfully."
         );
 
-        await loadUsers();
+        if (
+          users.length === 1 &&
+          page > 1
+        ) {
+          setPage(
+            (previous) =>
+              previous - 1
+          );
+        } else {
+          setRefreshKey(
+            (previous) =>
+              previous + 1
+          );
+        }
       } catch (err) {
         setError(
           err?.message ||
@@ -600,7 +755,6 @@ export default function AdminUsersPage() {
       }
     };
 
-
   // ======================================================
   // ROLE STYLE
   // ======================================================
@@ -608,33 +762,34 @@ export default function AdminUsersPage() {
   const getRoleStyle = (
     role
   ) => {
-    if (role === "ADMIN") {
-      return (
-        "bg-purple-50 " +
-        "text-purple-700"
-      );
+    const normalizedRole =
+      String(
+        role || ""
+      ).toUpperCase();
+
+    if (
+      normalizedRole ===
+      "ADMIN"
+    ) {
+      return "bg-purple-50 text-purple-700";
     }
 
-    if (role === "TEACHER") {
-      return (
-        "bg-blue-50 " +
-        "text-blue-700"
-      );
+    if (
+      normalizedRole ===
+      "TEACHER"
+    ) {
+      return "bg-blue-50 text-blue-700";
     }
 
-    if (role === "PARENT") {
-      return (
-        "bg-amber-50 " +
-        "text-amber-700"
-      );
+    if (
+      normalizedRole ===
+      "PARENT"
+    ) {
+      return "bg-amber-50 text-amber-700";
     }
 
-    return (
-      "bg-slate-100 " +
-      "text-slate-600"
-    );
+    return "bg-slate-100 text-slate-600";
   };
-
 
   // ======================================================
   // DATE FORMAT
@@ -659,6 +814,26 @@ export default function AdminUsersPage() {
     );
   };
 
+  // ======================================================
+  // PAGINATION DISPLAY
+  // ======================================================
+
+  const startRecord =
+    pagination.total > 0
+      ? (pagination.page -
+          1) *
+          pagination.page_size +
+        1
+      : 0;
+
+  const endRecord =
+    pagination.total > 0
+      ? Math.min(
+          pagination.page *
+            pagination.page_size,
+          pagination.total
+        )
+      : 0;
 
   // ======================================================
   // RENDER
@@ -666,18 +841,11 @@ export default function AdminUsersPage() {
 
   return (
     <AdminShell>
-
-      <div className="mx-auto max-w-[1500px]">
-
-
-        {/* ============================================= */}
+      <div className="mx-auto w-full max-w-[1500px]">
         {/* HEADER */}
-        {/* ============================================= */}
 
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
           <div>
-
             <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
               Users
             </h1>
@@ -687,70 +855,81 @@ export default function AdminUsersPage() {
               teacher and parent portal
               accounts.
             </p>
-
           </div>
-
 
           <button
             type="button"
-            onClick={openAddModal}
+            onClick={
+              openAddModal
+            }
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0075FF] px-5 text-sm font-semibold text-white transition hover:bg-[#0066de]"
           >
-
             <Plus size={18} />
 
             Add User
-
           </button>
-
         </div>
 
-
-        {/* ============================================= */}
         {/* SUCCESS */}
-        {/* ============================================= */}
 
         {success && (
-
           <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-
             {success}
-
           </div>
-
         )}
 
-
-        {/* ============================================= */}
         {/* ERROR */}
-        {/* ============================================= */}
 
         {error &&
           !modalOpen &&
           !passwordModalOpen && (
-
             <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-
               {error}
-
             </div>
-
           )}
 
+        {/* SUMMARY */}
 
-        {/* ============================================= */}
+        <div className="mb-5 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-slate-500">
+              Total Users
+            </p>
+
+            <p className="mt-2 text-2xl font-bold text-slate-900">
+              {pagination.total}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-slate-500">
+              Current Page
+            </p>
+
+            <p className="mt-2 text-2xl font-bold text-[#0075FF]">
+              {pagination.total_pages >
+              0
+                ? `${pagination.page} / ${pagination.total_pages}`
+                : "0 / 0"}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-slate-500">
+              Showing Records
+            </p>
+
+            <p className="mt-2 text-2xl font-bold text-slate-900">
+              {users.length}
+            </p>
+          </div>
+        </div>
+
         {/* FILTERS */}
-        {/* ============================================= */}
 
         <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-
           <div className="grid gap-3 lg:grid-cols-[2fr_1fr_1fr]">
-
-
-            {/* SEARCH */}
-
             <div className="relative">
-
               <Search
                 size={18}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -759,30 +938,23 @@ export default function AdminUsersPage() {
               <input
                 type="text"
                 value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value
-                  )
+                onChange={
+                  handleSearchChange
                 }
-                placeholder="Search users..."
+                placeholder="Search name, username or email..."
                 className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-[#0075FF]"
               />
-
             </div>
 
-
-            {/* ROLE */}
-
             <select
-              value={roleFilter}
-              onChange={(event) =>
-                setRoleFilter(
-                  event.target.value
-                )
+              value={
+                roleFilter
+              }
+              onChange={
+                handleRoleChange
               }
               className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#0075FF]"
             >
-
               <option value="">
                 All Roles
               </option>
@@ -798,24 +970,17 @@ export default function AdminUsersPage() {
               <option value="PARENT">
                 Parent
               </option>
-
             </select>
-
-
-            {/* STATUS */}
 
             <select
               value={
                 statusFilter
               }
-              onChange={(event) =>
-                setStatusFilter(
-                  event.target.value
-                )
+              onChange={
+                handleStatusFilterChange
               }
               className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#0075FF]"
             >
-
               <option value="">
                 All Status
               </option>
@@ -827,55 +992,39 @@ export default function AdminUsersPage() {
               <option value="inactive">
                 Inactive
               </option>
-
             </select>
-
           </div>
-
         </div>
 
-
-        {/* ============================================= */}
         {/* TABLE */}
-        {/* ============================================= */}
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
           {loading ? (
-
             <div className="flex min-h-[320px] flex-col items-center justify-center gap-3">
-
               <div className="h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-[#0075FF]" />
 
               <p className="text-sm text-slate-500">
                 Loading users...
               </p>
-
             </div>
-
-          ) : users.length === 0 ? (
-
+          ) : users.length ===
+            0 ? (
             <div className="flex min-h-[350px] flex-col items-center justify-center p-8 text-center">
-
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#0075FF]">
-
                 <Users
                   size={26}
                 />
-
               </div>
-
 
               <h3 className="text-base font-bold text-slate-900">
                 No users found
               </h3>
 
-
               <p className="mt-1 text-sm text-slate-500">
-                No users match your
-                current filters.
+                No users match
+                your current
+                filters.
               </p>
-
 
               <button
                 type="button"
@@ -884,289 +1033,333 @@ export default function AdminUsersPage() {
                 }
                 className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#0075FF] px-4 py-2.5 text-sm font-semibold text-white"
               >
-
-                <Plus size={17} />
+                <Plus
+                  size={17}
+                />
 
                 Add User
-
               </button>
-
             </div>
-
           ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1050px]">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        User
+                      </th>
 
-            <div className="overflow-x-auto">
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        Username
+                      </th>
 
-              <table className="w-full min-w-[1050px]">
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        Role
+                      </th>
 
-                <thead>
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        Status
+                      </th>
 
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        Created
+                      </th>
 
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      User
-                    </th>
+                      <th className="px-5 py-4 text-right text-xs font-bold uppercase text-slate-500">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
 
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      Username
-                    </th>
+                  <tbody>
+                    {users.map(
+                      (user) => {
+                        const role =
+                          String(
+                            user.role ||
+                              ""
+                          ).toUpperCase();
 
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      Role
-                    </th>
-
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      Status
-                    </th>
-
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      Created
-                    </th>
-
-                    <th className="px-5 py-4 text-right text-xs font-bold uppercase text-slate-500">
-                      Actions
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                  {users.map(
-                    (user) => (
-
-                      <tr
-                        key={user.id}
-                        className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
-                      >
-
-
-                        {/* USER */}
-
-                        <td className="px-5 py-4">
-
-                          <div className="flex items-center gap-3">
-
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0075FF]">
-
-                              <UserRound
-                                size={19}
-                              />
-
-                            </div>
-
-
-                            <div className="min-w-0">
-
-                              <p className="max-w-[250px] truncate text-sm font-semibold text-slate-900">
-
-                                {user.name}
-
-                              </p>
-
-                              <p className="mt-1 max-w-[250px] truncate text-xs text-slate-500">
-
-                                {user.email ||
-                                  "No email"}
-
-                              </p>
-
-                            </div>
-
-                          </div>
-
-                        </td>
-
-
-                        {/* USERNAME */}
-
-                        <td className="px-5 py-4 text-sm font-medium text-slate-700">
-
-                          {user.username}
-
-                        </td>
-
-
-                        {/* ROLE */}
-
-                        <td className="px-5 py-4">
-
-                          <span
-                            className={`inline-flex rounded-lg px-2.5 py-1.5 text-xs font-bold ${getRoleStyle(
-                              user.role
-                            )}`}
-                          >
-
-                            {user.role}
-
-                          </span>
-
-                        </td>
-
-
-                        {/* STATUS */}
-
-                        <td className="px-5 py-4">
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleStatusChange(
-                                user
-                              )
+                        return (
+                          <tr
+                            key={
+                              user.id
                             }
-                            className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                              user.is_active
-                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                            }`}
+                            className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
                           >
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0075FF]">
+                                  <UserRound
+                                    size={
+                                      19
+                                    }
+                                  />
+                                </div>
 
-                            {user.is_active
-                              ? "Active"
-                              : "Inactive"}
+                                <div className="min-w-0">
+                                  <p className="max-w-[250px] truncate text-sm font-semibold text-slate-900">
+                                    {user.name}
+                                  </p>
 
-                          </button>
+                                  <p className="mt-1 max-w-[250px] truncate text-xs text-slate-500">
+                                    {user.email ||
+                                      "No email"}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
 
-                        </td>
-
-
-                        {/* CREATED */}
-
-                        <td className="px-5 py-4 text-sm text-slate-600">
-
-                          {formatDate(
-                            user.created_at
-                          )}
-
-                        </td>
-
-
-                        {/* ACTIONS */}
-
-                        <td className="px-5 py-4">
-
-                          <div className="flex justify-end gap-2">
-
-
-                            {/* RESET PASSWORD */}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openPasswordModal(
-                                  user
-                                )
+                            <td className="px-5 py-4 text-sm font-medium text-slate-700">
+                              {
+                                user.username
                               }
-                              title="Reset Password"
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
-                            >
+                            </td>
 
-                              <KeyRound
-                                size={16}
-                              />
+                            <td className="px-5 py-4">
+                              <span
+                                className={`inline-flex rounded-lg px-2.5 py-1.5 text-xs font-bold ${getRoleStyle(
+                                  role
+                                )}`}
+                              >
+                                {
+                                  role
+                                }
+                              </span>
+                            </td>
 
-                            </button>
+                            <td className="px-5 py-4">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleStatusChange(
+                                    user
+                                  )
+                                }
+                                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                                  user.is_active
+                                    ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                }`}
+                              >
+                                {user.is_active
+                                  ? "Active"
+                                  : "Inactive"}
+                              </button>
+                            </td>
 
+                            <td className="px-5 py-4 text-sm text-slate-600">
+                              {formatDate(
+                                user.created_at
+                              )}
+                            </td>
 
-                            {/* EDIT */}
+                            <td className="px-5 py-4">
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openPasswordModal(
+                                      user
+                                    )
+                                  }
+                                  title="Reset Password"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
+                                >
+                                  <KeyRound
+                                    size={
+                                      16
+                                    }
+                                  />
+                                </button>
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openEditModal(
-                                  user
-                                )
-                              }
-                              title="Edit"
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#0075FF]"
-                            >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openEditModal(
+                                      user
+                                    )
+                                  }
+                                  title="Edit"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#0075FF]"
+                                >
+                                  <Pencil
+                                    size={
+                                      16
+                                    }
+                                  />
+                                </button>
 
-                              <Pencil
-                                size={16}
-                              />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDelete(
+                                      user
+                                    )
+                                  }
+                                  title="Delete"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                >
+                                  <Trash2
+                                    size={
+                                      16
+                                    }
+                                  />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-                            </button>
+              {/* PAGINATION */}
 
+              <div className="flex flex-col gap-4 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500">
+                  Showing{" "}
+                  <span className="font-semibold text-slate-700">
+                    {
+                      startRecord
+                    }
+                  </span>
+                  {" - "}
+                  <span className="font-semibold text-slate-700">
+                    {endRecord}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-semibold text-slate-700">
+                    {
+                      pagination.total
+                    }
+                  </span>
+                </p>
 
-                            {/* DELETE */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    value={
+                      pageSize
+                    }
+                    onChange={
+                      handlePageSizeChange
+                    }
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none"
+                  >
+                    <option
+                      value={
+                        25
+                      }
+                    >
+                      25 / page
+                    </option>
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleDelete(
-                                  user
-                                )
-                              }
-                              title="Delete"
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                            >
+                    <option
+                      value={
+                        50
+                      }
+                    >
+                      50 / page
+                    </option>
 
-                              <Trash2
-                                size={16}
-                              />
+                    <option
+                      value={
+                        100
+                      }
+                    >
+                      100 / page
+                    </option>
+                  </select>
 
-                            </button>
+                  <button
+                    type="button"
+                    disabled={
+                      !pagination.has_previous ||
+                      loading
+                    }
+                    onClick={() =>
+                      setPage(
+                        (previous) =>
+                          Math.max(
+                            1,
+                            previous -
+                              1
+                          )
+                      )
+                    }
+                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft
+                      size={
+                        16
+                      }
+                    />
 
-                          </div>
+                    Previous
+                  </button>
 
-                        </td>
+                  <span className="text-sm font-medium text-slate-600">
+                    Page{" "}
+                    {
+                      pagination.page
+                    }{" "}
+                    of{" "}
+                    {pagination.total_pages ||
+                      0}
+                  </span>
 
-                      </tr>
+                  <button
+                    type="button"
+                    disabled={
+                      !pagination.has_next ||
+                      loading
+                    }
+                    onClick={() =>
+                      setPage(
+                        (previous) =>
+                          previous +
+                          1
+                      )
+                    }
+                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
 
-                    )
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
+                    <ChevronRight
+                      size={
+                        16
+                      }
+                    />
+                  </button>
+                </div>
+              </div>
+            </>
           )}
-
         </div>
-
       </div>
 
-
-      {/* ================================================= */}
       {/* ADD / EDIT MODAL */}
-      {/* ================================================= */}
 
       {modalOpen && (
-
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4">
-
           <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-
-
-            {/* MODAL HEADER */}
-
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 md:px-6">
-
               <div>
-
                 <h2 className="text-lg font-bold text-slate-900">
-
                   {editingUser
                     ? "Edit User"
                     : "Add New User"}
-
                 </h2>
 
                 <p className="mt-1 text-xs text-slate-500">
-
                   {editingUser
                     ? "Update portal user account details."
                     : "Create a new portal user account."}
-
                 </p>
-
               </div>
-
 
               <button
                 type="button"
@@ -1175,15 +1368,9 @@ export default function AdminUsersPage() {
                 }
                 className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200"
               >
-
                 <X size={18} />
-
               </button>
-
             </div>
-
-
-            {/* FORM */}
 
             <form
               onSubmit={
@@ -1191,65 +1378,42 @@ export default function AdminUsersPage() {
               }
               className="p-5 md:p-6"
             >
-
-
               {error && (
-
                 <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-
                   {error}
-
                 </div>
-
               )}
 
-
               <div className="grid gap-5 md:grid-cols-2">
-
-
-                {/* FULL NAME */}
-
                 <div className="md:col-span-2">
-
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-
-                    Full Name
-
+                    Full Name{" "}
                     <span className="text-red-500">
                       *
                     </span>
-
                   </label>
-
 
                   <input
                     type="text"
                     name="name"
-                    value={form.name}
+                    value={
+                      form.name
+                    }
                     onChange={
                       handleChange
                     }
                     placeholder="Enter full name"
-                    className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none focus:border-[#0075FF] focus:ring-2 focus:ring-blue-100"
+                    className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none focus:border-[#0075FF]"
                   />
-
                 </div>
 
-
-                {/* USERNAME */}
-
                 <div>
-
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-
-                    Username
-
+                    Username{" "}
                     <span className="text-red-500">
                       *
                     </span>
-
                   </label>
-
 
                   <input
                     type="text"
@@ -1263,18 +1427,12 @@ export default function AdminUsersPage() {
                     placeholder="ADMIN001"
                     className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none focus:border-[#0075FF]"
                   />
-
                 </div>
 
-
-                {/* EMAIL */}
-
                 <div>
-
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
                     Email
                   </label>
-
 
                   <input
                     type="email"
@@ -1288,24 +1446,15 @@ export default function AdminUsersPage() {
                     placeholder="user@rosaryschool.com"
                     className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none focus:border-[#0075FF]"
                   />
-
                 </div>
 
-
-                {/* ROLE */}
-
                 <div>
-
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-
-                    Role
-
+                    Role{" "}
                     <span className="text-red-500">
                       *
                     </span>
-
                   </label>
-
 
                   <select
                     name="role"
@@ -1317,7 +1466,6 @@ export default function AdminUsersPage() {
                     }
                     className="h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm outline-none focus:border-[#0075FF]"
                   >
-
                     <option value="ADMIN">
                       Admin
                     </option>
@@ -1329,31 +1477,19 @@ export default function AdminUsersPage() {
                     <option value="PARENT">
                       Parent
                     </option>
-
                   </select>
-
                 </div>
 
-
-                {/* PASSWORD ADD ONLY */}
-
                 {!editingUser && (
-
                   <div>
-
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
-
-                      Password
-
+                      Password{" "}
                       <span className="text-red-500">
                         *
                       </span>
-
                     </label>
 
-
                     <div className="relative">
-
                       <input
                         type={
                           showPassword
@@ -1371,7 +1507,6 @@ export default function AdminUsersPage() {
                         className="h-11 w-full rounded-xl border border-slate-200 px-3.5 pr-11 text-sm outline-none focus:border-[#0075FF]"
                       />
 
-
                       <button
                         type="button"
                         onClick={() =>
@@ -1381,46 +1516,40 @@ export default function AdminUsersPage() {
                         }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
                       >
-
                         {showPassword ? (
                           <EyeOff
-                            size={18}
+                            size={
+                              18
+                            }
                           />
                         ) : (
                           <Eye
-                            size={18}
+                            size={
+                              18
+                            }
                           />
                         )}
-
                       </button>
-
                     </div>
-
                   </div>
-
                 )}
 
-
-                {/* ACTIVE */}
-
                 <div className="md:col-span-2">
-
                   <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 p-4">
-
                     <div>
-
                       <p className="text-sm font-semibold text-slate-800">
                         Active User
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500">
-                        Inactive users will
-                        not be allowed to
-                        access the portal.
+                        Inactive
+                        users will
+                        not be
+                        allowed to
+                        access the
+                        portal.
                       </p>
-
                     </div>
-
 
                     <input
                       type="checkbox"
@@ -1433,19 +1562,11 @@ export default function AdminUsersPage() {
                       }
                       className="h-5 w-5 accent-[#0075FF]"
                     />
-
                   </label>
-
                 </div>
-
               </div>
 
-
-              {/* BUTTONS */}
-
               <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
-
-
                 <button
                   type="button"
                   disabled={
@@ -1456,11 +1577,8 @@ export default function AdminUsersPage() {
                   }
                   className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                 >
-
                   Cancel
-
                 </button>
-
 
                 <button
                   type="submit"
@@ -1469,71 +1587,35 @@ export default function AdminUsersPage() {
                   }
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0075FF] px-5 text-sm font-semibold text-white transition hover:bg-[#0066de] disabled:opacity-50"
                 >
-
-                  {saving ? (
-                    "Saving..."
-                  ) : (
-                    <>
-
-                      {editingUser ? (
-                        <Pencil
-                          size={17}
-                        />
-                      ) : (
-                        <Plus
-                          size={17}
-                        />
-                      )}
-
-                      {editingUser
-                        ? "Update User"
-                        : "Save User"}
-
-                    </>
-                  )}
-
+                  {saving
+                    ? "Saving..."
+                    : editingUser
+                      ? "Update User"
+                      : "Save User"}
                 </button>
-
               </div>
-
             </form>
-
           </div>
-
         </div>
-
       )}
 
-
-      {/* ================================================= */}
       {/* RESET PASSWORD MODAL */}
-      {/* ================================================= */}
 
       {passwordModalOpen && (
-
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 p-4">
-
           <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
-
-
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-
               <div>
-
                 <h2 className="text-lg font-bold text-slate-900">
                   Reset Password
                 </h2>
 
                 <p className="mt-1 text-xs text-slate-500">
-
                   {passwordUser
                     ? `Set a new password for ${passwordUser.name}.`
                     : "Set a new password."}
-
                 </p>
-
               </div>
-
 
               <button
                 type="button"
@@ -1542,13 +1624,9 @@ export default function AdminUsersPage() {
                 }
                 className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500"
               >
-
                 <X size={18} />
-
               </button>
-
             </div>
-
 
             <form
               onSubmit={
@@ -1556,32 +1634,20 @@ export default function AdminUsersPage() {
               }
               className="p-5"
             >
-
-
               {error && (
-
                 <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-
                   {error}
-
                 </div>
-
               )}
 
-
               <label className="mb-2 block text-sm font-semibold text-slate-700">
-
-                New Password
-
+                New Password{" "}
                 <span className="text-red-500">
                   *
                 </span>
-
               </label>
 
-
               <div className="relative">
-
                 <input
                   type={
                     showNewPassword
@@ -1591,15 +1657,17 @@ export default function AdminUsersPage() {
                   value={
                     newPassword
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setNewPassword(
-                      event.target.value
+                      event.target
+                        .value
                     )
                   }
                   placeholder="Minimum 8 characters"
                   className="h-11 w-full rounded-xl border border-slate-200 px-3.5 pr-11 text-sm outline-none focus:border-[#0075FF]"
                 />
-
 
                 <button
                   type="button"
@@ -1610,30 +1678,28 @@ export default function AdminUsersPage() {
                   }
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
                 >
-
                   {showNewPassword ? (
                     <EyeOff
-                      size={18}
+                      size={
+                        18
+                      }
                     />
                   ) : (
                     <Eye
-                      size={18}
+                      size={
+                        18
+                      }
                     />
                   )}
-
                 </button>
-
               </div>
 
-
               <p className="mt-2 text-xs text-slate-500">
-                Minimum 8 characters.
+                Minimum 8
+                characters.
               </p>
 
-
               <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-5">
-
-
                 <button
                   type="button"
                   disabled={
@@ -1644,11 +1710,8 @@ export default function AdminUsersPage() {
                   }
                   className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-600"
                 >
-
                   Cancel
-
                 </button>
-
 
                 <button
                   type="submit"
@@ -1657,27 +1720,21 @@ export default function AdminUsersPage() {
                   }
                   className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#0075FF] px-5 text-sm font-semibold text-white disabled:opacity-50"
                 >
-
                   <KeyRound
-                    size={17}
+                    size={
+                      17
+                    }
                   />
 
                   {saving
                     ? "Resetting..."
                     : "Reset Password"}
-
                 </button>
-
               </div>
-
             </form>
-
           </div>
-
         </div>
-
       )}
-
     </AdminShell>
   );
 }

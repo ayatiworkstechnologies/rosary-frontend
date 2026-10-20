@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
@@ -29,82 +28,99 @@ import {
   PowerOff,
   AlertCircle,
   Filter,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 export default function AdminStudentsPage() {
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] =
+    useState([]);
 
-  const [classes, setClasses] = useState([]);
+  const [classes, setClasses] =
+    useState([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [statusLoadingId, setStatusLoadingId] =
-    useState(null);
+  const [
+    statusLoadingId,
+    setStatusLoadingId,
+  ] = useState(null);
 
-  const [error, setError] = useState("");
-
-  const [search, setSearch] = useState("");
-
-  const [classFilter, setClassFilter] =
+  const [error, setError] =
     useState("");
 
-  const [statusFilter, setStatusFilter] =
+  const [search, setSearch] =
     useState("");
+
+  const [
+    classFilter,
+    setClassFilter,
+  ] = useState("");
+
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("");
+
+  const [page, setPage] =
+    useState(1);
+
+  const [
+    pageSize,
+    setPageSize,
+  ] = useState(25);
+
+  const [
+    refreshKey,
+    setRefreshKey,
+  ] = useState(0);
+
+  const [
+    pagination,
+    setPagination,
+  ] = useState({
+    page: 1,
+    page_size: 25,
+    total: 0,
+    total_pages: 0,
+    has_next: false,
+    has_previous: false,
+  });
 
   // =====================================================
-  // INITIAL PAGE LOAD
+  // LOAD CLASSES
   // =====================================================
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadInitialData() {
-      try {
-        const [
-          studentsResponse,
-          classesResponse,
-        ] = await Promise.all([
-          getAdminStudents(),
-          getAdminClasses(),
-        ]);
+    const loadClasses =
+      async () => {
+        try {
+          const response =
+            await getAdminClasses();
 
-        if (cancelled) {
-          return;
+          if (cancelled) {
+            return;
+          }
+
+          setClasses(
+            Array.isArray(
+              response?.data
+            )
+              ? response.data
+              : []
+          );
+        } catch (error) {
+          console.error(
+            "Classes loading error:",
+            error
+          );
         }
+      };
 
-        setStudents(
-          Array.isArray(studentsResponse?.data)
-            ? studentsResponse.data
-            : []
-        );
-
-        setClasses(
-          Array.isArray(classesResponse?.data)
-            ? classesResponse.data
-            : []
-        );
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        console.error(
-          "Students page loading error:",
-          error
-        );
-
-        setError(
-          error?.message ||
-            "Unable to load students."
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadInitialData();
+    loadClasses();
 
     return () => {
       cancelled = true;
@@ -112,156 +128,307 @@ export default function AdminStudentsPage() {
   }, []);
 
   // =====================================================
-  // REFRESH
+  // LOAD STUDENTS
   // =====================================================
 
-  const handleRefresh = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  useEffect(() => {
+    let cancelled = false;
 
-      const [
-        studentsResponse,
-        classesResponse,
-      ] = await Promise.all([
-        getAdminStudents(),
-        getAdminClasses(),
-      ]);
+    const timer =
+      setTimeout(
+        async () => {
+          try {
+            setLoading(true);
+            setError("");
 
-      setStudents(
-        Array.isArray(studentsResponse?.data)
-          ? studentsResponse.data
-          : []
+            const params = {
+              page,
+              page_size:
+                pageSize,
+            };
+
+            if (
+              search.trim()
+            ) {
+              params.search =
+                search.trim();
+            }
+
+            if (
+              classFilter
+            ) {
+              params.class_id =
+                classFilter;
+            }
+
+            if (
+              statusFilter ===
+              "active"
+            ) {
+              params.is_active =
+                true;
+            }
+
+            if (
+              statusFilter ===
+              "inactive"
+            ) {
+              params.is_active =
+                false;
+            }
+
+            const response =
+              await getAdminStudents(
+                params
+              );
+
+            if (cancelled) {
+              return;
+            }
+
+            setStudents(
+              Array.isArray(
+                response?.data
+              )
+                ? response.data
+                : []
+            );
+
+            setPagination(
+              response
+                ?.pagination || {
+                page,
+                page_size:
+                  pageSize,
+                total: 0,
+                total_pages: 0,
+                has_next:
+                  false,
+                has_previous:
+                  false,
+              }
+            );
+          } catch (error) {
+            if (cancelled) {
+              return;
+            }
+
+            console.error(
+              "Students loading error:",
+              error
+            );
+
+            setStudents([]);
+
+            setPagination({
+              page,
+              page_size:
+                pageSize,
+              total: 0,
+              total_pages: 0,
+              has_next:
+                false,
+              has_previous:
+                false,
+            });
+
+            setError(
+              error?.message ||
+                "Unable to load students."
+            );
+          } finally {
+            if (!cancelled) {
+              setLoading(false);
+            }
+          }
+        },
+        300
       );
 
-      setClasses(
-        Array.isArray(classesResponse?.data)
-          ? classesResponse.data
-          : []
+    return () => {
+      cancelled = true;
+
+      clearTimeout(
+        timer
       );
-    } catch (error) {
-      console.error(
-        "Refresh students error:",
-        error
-      );
-
-      setError(
-        error?.message ||
-          "Unable to load students."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // =====================================================
-  // FILTER STUDENTS
-  // =====================================================
-
-  const filteredStudents = useMemo(() => {
-    const keyword = search
-      .trim()
-      .toLowerCase();
-
-    return students.filter((student) => {
-      const fullName =
-        student.full_name
-          ?.toLowerCase() || "";
-
-      const admissionNo =
-        student.admission_no
-          ?.toLowerCase() || "";
-
-      const rollNo =
-        student.roll_no
-          ?.toLowerCase() || "";
-
-      const matchesSearch =
-        !keyword ||
-        fullName.includes(keyword) ||
-        admissionNo.includes(keyword) ||
-        rollNo.includes(keyword);
-
-      const matchesClass =
-        !classFilter ||
-        String(student.class_id) ===
-          String(classFilter);
-
-      const matchesStatus =
-        statusFilter === ""
-          ? true
-          : statusFilter === "active"
-          ? student.is_active === true
-          : student.is_active === false;
-
-      return (
-        matchesSearch &&
-        matchesClass &&
-        matchesStatus
-      );
-    });
+    };
   }, [
-    students,
     search,
     classFilter,
     statusFilter,
+    page,
+    pageSize,
+    refreshKey,
   ]);
 
   // =====================================================
-  // ACTIVE / INACTIVE
+  // SEARCH
   // =====================================================
 
-  const handleStatusChange = async (
-    student
-  ) => {
-    const newStatus =
-      !student.is_active;
-
-    const confirmed =
-      window.confirm(
-        newStatus
-          ? `Activate ${student.full_name}?`
-          : `Deactivate ${student.full_name}?`
+  const handleSearchChange =
+    (event) => {
+      setSearch(
+        event.target.value
       );
 
-    if (!confirmed) {
-      return;
-    }
+      setPage(1);
+    };
 
-    try {
-      setStatusLoadingId(
-        student.id
+  // =====================================================
+  // CLASS FILTER
+  // =====================================================
+
+  const handleClassChange =
+    (event) => {
+      setClassFilter(
+        event.target.value
       );
 
-      await updateAdminStudentStatus(
-        student.id,
-        newStatus
+      setPage(1);
+    };
+
+  // =====================================================
+  // STATUS FILTER
+  // =====================================================
+
+  const handleStatusFilterChange =
+    (event) => {
+      setStatusFilter(
+        event.target.value
       );
 
-      setStudents((current) =>
-        current.map((item) =>
-          item.id === student.id
-            ? {
-                ...item,
-                is_active: newStatus,
-              }
-            : item
+      setPage(1);
+    };
+
+  // =====================================================
+  // PAGE SIZE
+  // =====================================================
+
+  const handlePageSizeChange =
+    (event) => {
+      setPageSize(
+        Number(
+          event.target.value
         )
       );
-    } catch (error) {
-      console.error(
-        "Student status update error:",
-        error
-      );
 
-      window.alert(
-        error?.message ||
-          "Unable to update student status."
+      setPage(1);
+    };
+
+  // =====================================================
+  // REFRESH
+  // =====================================================
+
+  const handleRefresh =
+    () => {
+      setRefreshKey(
+        (current) =>
+          current + 1
       );
-    } finally {
-      setStatusLoadingId(null);
-    }
-  };
+    };
+
+  // =====================================================
+  // STATUS UPDATE
+  // =====================================================
+
+  const handleStatusChange =
+    async (student) => {
+      const newStatus =
+        !student.is_active;
+
+      const confirmed =
+        window.confirm(
+          newStatus
+            ? `Activate ${student.full_name}?`
+            : `Deactivate ${student.full_name}?`
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        setStatusLoadingId(
+          student.id
+        );
+
+        await updateAdminStudentStatus(
+          student.id,
+          newStatus
+        );
+
+        setRefreshKey(
+          (current) =>
+            current + 1
+        );
+      } catch (error) {
+        console.error(
+          "Student status update error:",
+          error
+        );
+
+        window.alert(
+          error?.message ||
+            "Unable to update student status."
+        );
+      } finally {
+        setStatusLoadingId(
+          null
+        );
+      }
+    };
+
+  // =====================================================
+  // PAGINATION
+  // =====================================================
+
+  const startRecord =
+    pagination.total === 0
+      ? 0
+      : (
+          pagination.page -
+          1
+        ) *
+          pagination.page_size +
+        1;
+
+  const endRecord =
+    pagination.total === 0
+      ? 0
+      : Math.min(
+          pagination.page *
+            pagination.page_size,
+          pagination.total
+        );
+
+  const handlePreviousPage =
+    () => {
+      if (
+        pagination.has_previous &&
+        !loading
+      ) {
+        setPage(
+          (current) =>
+            Math.max(
+              1,
+              current - 1
+            )
+        );
+      }
+    };
+
+  const handleNextPage =
+    () => {
+      if (
+        pagination.has_next &&
+        !loading
+      ) {
+        setPage(
+          (current) =>
+            current + 1
+        );
+      }
+    };
 
   return (
     <AdminShell>
@@ -277,8 +444,9 @@ export default function AdminStudentsPage() {
             </h1>
 
             <p className="mt-1 text-sm text-gray-500">
-              Manage student profiles,
-              classes and account status.
+              Manage student
+              profiles, classes
+              and account status.
             </p>
           </div>
 
@@ -286,7 +454,9 @@ export default function AdminStudentsPage() {
             href="/admin/students/add"
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0075FF] px-5 text-sm font-semibold text-white transition hover:bg-[#0067DF]"
           >
-            <Plus size={18} />
+            <Plus
+              size={18}
+            />
 
             Add Student
           </Link>
@@ -298,48 +468,40 @@ export default function AdminStudentsPage() {
       {/* ================================================= */}
 
       <section className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {/* Total */}
-
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
             Total Students
           </p>
 
           <p className="mt-2 text-2xl font-bold text-gray-900">
-            {students.length}
-          </p>
-        </div>
-
-        {/* Active */}
-
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <p className="text-sm text-gray-500">
-            Active
-          </p>
-
-          <p className="mt-2 text-2xl font-bold text-green-600">
             {
-              students.filter(
-                (item) =>
-                  item.is_active
-              ).length
+              pagination.total
             }
           </p>
         </div>
 
-        {/* Inactive */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">
+            Current Page
+          </p>
+
+          <p className="mt-2 text-2xl font-bold text-[#0075FF]">
+            {pagination
+              .total_pages >
+            0
+              ? `${pagination.page} / ${pagination.total_pages}`
+              : "0 / 0"}
+          </p>
+        </div>
 
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
-            Inactive
+            Showing Records
           </p>
 
-          <p className="mt-2 text-2xl font-bold text-gray-600">
+          <p className="mt-2 text-2xl font-bold text-gray-700">
             {
-              students.filter(
-                (item) =>
-                  !item.is_active
-              ).length
+              students.length
             }
           </p>
         </div>
@@ -362,17 +524,15 @@ export default function AdminStudentsPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
+              onChange={
+                handleSearchChange
               }
               placeholder="Search student, admission no or roll no..."
               className="h-11 w-full rounded-xl border border-gray-200 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-[#0075FF]"
             />
           </div>
 
-          {/* Class Filter */}
+          {/* Class */}
 
           <div className="relative">
             <Filter
@@ -381,11 +541,11 @@ export default function AdminStudentsPage() {
             />
 
             <select
-              value={classFilter}
-              onChange={(e) =>
-                setClassFilter(
-                  e.target.value
-                )
+              value={
+                classFilter
+              }
+              onChange={
+                handleClassChange
               }
               className="h-11 w-full appearance-none rounded-xl border border-gray-200 bg-white pl-10 pr-4 text-sm text-gray-700 outline-none transition focus:border-[#0075FF]"
             >
@@ -396,11 +556,21 @@ export default function AdminStudentsPage() {
               {classes.map(
                 (item) => (
                   <option
-                    key={item.id}
-                    value={item.id}
+                    key={
+                      item.id
+                    }
+                    value={
+                      item.id
+                    }
                   >
-                    {item.name} -{" "}
-                    {item.section} (
+                    {
+                      item.name
+                    }{" "}
+                    -{" "}
+                    {
+                      item.section
+                    }{" "}
+                    (
                     {
                       item.academic_year
                     }
@@ -411,14 +581,14 @@ export default function AdminStudentsPage() {
             </select>
           </div>
 
-          {/* Status Filter */}
+          {/* Status */}
 
           <select
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(
-                e.target.value
-              )
+            value={
+              statusFilter
+            }
+            onChange={
+              handleStatusFilterChange
             }
             className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none transition focus:border-[#0075FF]"
           >
@@ -439,8 +609,12 @@ export default function AdminStudentsPage() {
 
           <button
             type="button"
-            onClick={handleRefresh}
-            disabled={loading}
+            onClick={
+              handleRefresh
+            }
+            disabled={
+              loading
+            }
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <RefreshCw
@@ -470,7 +644,8 @@ export default function AdminStudentsPage() {
 
           <div>
             <p className="text-sm font-semibold text-red-700">
-              Unable to load students
+              Unable to load
+              students
             </p>
 
             <p className="mt-1 text-xs text-red-600">
@@ -481,14 +656,12 @@ export default function AdminStudentsPage() {
       )}
 
       {/* ================================================= */}
-      {/* STUDENTS TABLE */}
+      {/* TABLE */}
       {/* ================================================= */}
 
       <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1000px]">
-            {/* Table Header */}
-
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -521,58 +694,68 @@ export default function AdminStudentsPage() {
               </tr>
             </thead>
 
-            {/* Table Body */}
-
             <tbody className="divide-y divide-gray-100">
-              {/* Loading */}
-
               {loading ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={
+                      7
+                    }
                     className="px-6 py-14 text-center"
                   >
                     <RefreshCw
-                      size={25}
+                      size={
+                        25
+                      }
                       className="mx-auto animate-spin text-[#0075FF]"
                     />
 
                     <p className="mt-3 text-sm text-gray-500">
-                      Loading students...
+                      Loading
+                      students...
                     </p>
                   </td>
                 </tr>
-              ) : filteredStudents.length ===
+              ) : students.length ===
                 0 ? (
-                /* Empty */
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={
+                      7
+                    }
                     className="px-6 py-14"
                   >
                     <div className="text-center">
                       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#0075FF]">
                         <GraduationCap
-                          size={27}
+                          size={
+                            27
+                          }
                         />
                       </div>
 
                       <p className="mt-3 font-semibold text-gray-700">
-                        No students found
+                        No students
+                        found
                       </p>
 
                       <p className="mt-1 text-sm text-gray-400">
-                        Try changing the
-                        search or filter.
+                        Try changing
+                        the search or
+                        filter.
                       </p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                filteredStudents.map(
-                  (student) => (
+                students.map(
+                  (
+                    student
+                  ) => (
                     <tr
-                      key={student.id}
+                      key={
+                        student.id
+                      }
                       className="transition hover:bg-gray-50"
                     >
                       {/* Student */}
@@ -581,18 +764,18 @@ export default function AdminStudentsPage() {
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-semibold text-[#0075FF]">
                             {student.full_name
-                              ?.charAt(0)
+                              ?.charAt(
+                                0
+                              )
                               .toUpperCase() ||
                               "S"}
                           </div>
 
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">
-                              {
-                                student.full_name
-                              }
-                            </p>
-                          </div>
+                          <p className="text-sm font-semibold text-gray-800">
+                            {
+                              student.full_name
+                            }
+                          </p>
                         </div>
                       </td>
 
@@ -647,7 +830,8 @@ export default function AdminStudentsPage() {
                           </div>
                         ) : (
                           <span className="text-sm text-gray-400">
-                            Not Assigned
+                            Not
+                            Assigned
                           </span>
                         )}
                       </td>
@@ -672,19 +856,17 @@ export default function AdminStudentsPage() {
 
                       <td className="px-6 py-4">
                         <div className="flex justify-end gap-2">
-                          {/* Edit */}
-
                           <Link
                             href={`/admin/students/${student.id}/edit`}
                             title="Edit Student"
                             className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#0075FF]"
                           >
                             <Pencil
-                              size={16}
+                              size={
+                                16
+                              }
                             />
                           </Link>
-
-                          {/* Status */}
 
                           <button
                             type="button"
@@ -711,16 +893,22 @@ export default function AdminStudentsPage() {
                             {statusLoadingId ===
                             student.id ? (
                               <RefreshCw
-                                size={16}
+                                size={
+                                  16
+                                }
                                 className="animate-spin"
                               />
                             ) : student.is_active ? (
                               <PowerOff
-                                size={16}
+                                size={
+                                  16
+                                }
                               />
                             ) : (
                               <Power
-                                size={16}
+                                size={
+                                  16
+                                }
                               />
                             )}
                           </button>
@@ -732,6 +920,123 @@ export default function AdminStudentsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* ================================================= */}
+        {/* PAGINATION */}
+        {/* ================================================= */}
+
+        <div className="flex flex-col gap-4 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+            <span>
+              Showing{" "}
+              <span className="font-semibold text-gray-700">
+                {
+                  startRecord
+                }
+              </span>
+              {" - "}
+              <span className="font-semibold text-gray-700">
+                {
+                  endRecord
+                }
+              </span>
+              {" of "}
+              <span className="font-semibold text-gray-700">
+                {
+                  pagination.total
+                }
+              </span>
+            </span>
+
+            <select
+              value={
+                pageSize
+              }
+              onChange={
+                handlePageSizeChange
+              }
+              disabled={
+                loading
+              }
+              className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-600 outline-none focus:border-[#0075FF] disabled:opacity-50"
+            >
+              <option
+                value={
+                  25
+                }
+              >
+                25 / page
+              </option>
+
+              <option
+                value={
+                  50
+                }
+              >
+                50 / page
+              </option>
+
+              <option
+                value={
+                  100
+                }
+              >
+                100 / page
+              </option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={
+                handlePreviousPage
+              }
+              disabled={
+                loading ||
+                !pagination.has_previous
+              }
+              className="inline-flex h-10 items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft
+                size={17}
+              />
+
+              Previous
+            </button>
+
+            <span className="min-w-[100px] text-center text-sm font-semibold text-gray-700">
+              Page{" "}
+              {pagination
+                .total_pages >
+              0
+                ? pagination.page
+                : 0}{" "}
+              of{" "}
+              {
+                pagination.total_pages
+              }
+            </span>
+
+            <button
+              type="button"
+              onClick={
+                handleNextPage
+              }
+              disabled={
+                loading ||
+                !pagination.has_next
+              }
+              className="inline-flex h-10 items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+
+              <ChevronRight
+                size={17}
+              />
+            </button>
+          </div>
         </div>
       </section>
     </AdminShell>
