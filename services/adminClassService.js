@@ -40,9 +40,37 @@ async function handleResponse(
 }
 
 // GET ALL CLASSES
-export async function getAdminClasses() {
+
+// =========================================================
+// GET ADMIN CLASSES
+// Default: All classes for existing dropdowns
+// Optional: Paginated classes for listing page
+// =========================================================
+
+export async function getAdminClasses(options = {}) {
+  const {
+    page = 1,
+    page_size = 25,
+    search = "",
+    paginated = false,
+  } = options;
+
+  const params = new URLSearchParams();
+
+  if (paginated) {
+    params.set("page", String(page));
+    params.set("page_size", String(page_size));
+
+    if (search.trim()) {
+      params.set("search", search.trim());
+    }
+  } else {
+    // Preserve existing dropdown functionality
+    params.set("all", "true");
+  }
+
   const response = await fetch(
-    `${API_URL}/admin/classes`,
+    `${API_URL}/admin/classes?${params.toString()}`,
     {
       method: "GET",
       headers: getHeaders(),
@@ -55,6 +83,7 @@ export async function getAdminClasses() {
     "Unable to load classes"
   );
 }
+
 
 // GET SINGLE CLASS
 export async function getAdminClass(id) {

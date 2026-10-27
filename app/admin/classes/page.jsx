@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import AdminShell from "@/components/admin/AdminShell";
@@ -19,84 +20,160 @@ import {
   AlertCircle,
   Power,
   PowerOff,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 export default function AdminClassesPage() {
+  // =========================================================
+  // STATE
+  // =========================================================
+
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusLoadingId, setStatusLoadingId] =
-    useState(null);
-
+  const [statusLoadingId, setStatusLoadingId] = useState(null);
   const [error, setError] = useState("");
+
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const loadClasses = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-      const response =
-        await getAdminClasses();
+  const [pagination, setPagination] = useState({
+    total: 0,
+    total_pages: 1,
+    has_next: false,
+    has_previous: false,
+  });
 
-      setClasses(response?.data || []);
-    } catch (error) {
-      console.error(
-        "Load classes error:",
-        error
-      );
+  const [summary, setSummary] = useState({
+    total_classes: 0,
+    active_classes: 0,
+    inactive_classes: 0,
+  });
 
-      setError(
-        error?.message ||
-          "Unable to load classes."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // =========================================================
+  // DEBOUNCED SEARCH
+  // =========================================================
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      void loadClasses();
-    }, 0);
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 350);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [search]);
 
-  const filteredClasses = useMemo(() => {
-    const keyword = search
-      .trim()
-      .toLowerCase();
+  // =========================================================
+  // LOAD CLASSES
+  // =========================================================
 
-    if (!keyword) {
-      return classes;
-    }
+  const loadClasses = useCallback(
+    async (signal) => {
+      try {
+        if (signal?.aborted) return;
 
-    return classes.filter((item) => {
-      const searchableText = `
-        ${item.name || ""}
-        ${item.section || ""}
-        ${item.academic_year || ""}
-      `.toLowerCase();
+        setLoading(true);
+        setError("");
 
-      return searchableText.includes(
-        keyword
-      );
-    });
-  }, [classes, search]);
+        const response = await getAdminClasses({
+          paginated: true,
+          page,
+          page_size: pageSize,
+          search: debouncedSearch,
+        });
 
-  const handleStatusChange = async (
-    item
-  ) => {
+        if (signal?.aborted) return;
+
+        const items = Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+        setClasses(items);
+
+        setPagination({
+          total: Number(response?.total ?? 0),
+          total_pages: Math.max(
+            1,
+            Number(response?.total_pages ?? 1)
+          ),
+          has_next: Boolean(response?.has_next),
+          has_previous: Boolean(response?.has_previous),
+        });
+
+        setSummary({
+          total_classes: Number(
+            response?.summary?.total_classes ?? 0
+          ),
+          active_classes: Number(
+            response?.summary?.active_classes ?? 0
+          ),
+          inactive_classes: Number(
+            response?.summary?.inactive_classes ?? 0
+          ),
+        });
+      } catch (err) {
+        if (signal?.aborted) return;
+
+        console.error("Load classes error:", err);
+
+        setError(
+          err?.message || "Unable to load classes."
+        );
+
+        setClasses([]);
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
+      }
+    },
+    [page, pageSize, debouncedSearch]
+  );
+
+  // =========================================================
+  // LOAD ON PAGE / SEARCH / PAGE SIZE CHANGE
+  // FIX: DEFER STATE UPDATES OUTSIDE EFFECT BODY
+  // =========================================================
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const timer = setTimeout(() => {
+      if (!controller.signal.aborted) {
+        void loadClasses(controller.signal);
+      }
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [loadClasses, refreshKey]);
+
+  // =========================================================
+  // REFRESH
+  // =========================================================
+
+  const handleRefresh = () => {
+    setRefreshKey((current) => current + 1);
+  };
+
+  // =========================================================
+  // ACTIVATE / DEACTIVATE
+  // =========================================================
+
+  const handleStatusChange = async (item) => {
     const newStatus = !item.is_active;
 
     const message = newStatus
       ? `Activate ${item.name} - ${item.section}?`
       : `Deactivate ${item.name} - ${item.section}?`;
 
-    const confirmed =
-      window.confirm(message);
-
-    if (!confirmed) {
+    if (!window.confirm(message)) {
       return;
     }
 
@@ -108,19 +185,16 @@ export default function AdminClassesPage() {
         newStatus
       );
 
-      setClasses((current) =>
-        current.map((classItem) =>
-          classItem.id === item.id
-            ? {
-                ...classItem,
-                is_active: newStatus,
-              }
-            : classItem
-        )
+      // Refresh both current page and summary counts.
+      handleRefresh();
+    } catch (err) {
+      console.error(
+        "Update class status error:",
+        err
       );
-    } catch (error) {
-      alert(
-        error?.message ||
+
+      window.alert(
+        err?.message ||
           "Unable to update class status."
       );
     } finally {
@@ -128,9 +202,29 @@ export default function AdminClassesPage() {
     }
   };
 
+  // =========================================================
+  // PAGINATION VALUES
+  // =========================================================
+
+  const totalPages = pagination.total_pages;
+
+  const startRecord =
+    pagination.total === 0
+      ? 0
+      : (page - 1) * pageSize + 1;
+
+  const endRecord = Math.min(
+    page * pageSize,
+    pagination.total
+  );
+
+  // =========================================================
+  // UI
+  // =========================================================
+
   return (
     <AdminShell>
-      {/* Header */}
+      {/* HEADER */}
       <section className="mb-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -139,8 +233,7 @@ export default function AdminClassesPage() {
             </h1>
 
             <p className="mt-1 text-sm text-gray-500">
-              Manage school classes,
-              sections and academic years.
+              Manage school classes, sections and academic years.
             </p>
           </div>
 
@@ -149,13 +242,12 @@ export default function AdminClassesPage() {
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0075FF] px-5 text-sm font-semibold text-white transition hover:bg-[#0067DF]"
           >
             <Plus size={18} />
-
             Add Class
           </Link>
         </div>
       </section>
 
-      {/* Summary */}
+      {/* SUMMARY CARDS */}
       <section className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
@@ -163,7 +255,7 @@ export default function AdminClassesPage() {
           </p>
 
           <p className="mt-2 text-2xl font-bold text-gray-900">
-            {classes.length}
+            {summary.total_classes}
           </p>
         </div>
 
@@ -173,11 +265,7 @@ export default function AdminClassesPage() {
           </p>
 
           <p className="mt-2 text-2xl font-bold text-green-600">
-            {
-              classes.filter(
-                (item) => item.is_active
-              ).length
-            }
+            {summary.active_classes}
           </p>
         </div>
 
@@ -187,16 +275,12 @@ export default function AdminClassesPage() {
           </p>
 
           <p className="mt-2 text-2xl font-bold text-gray-600">
-            {
-              classes.filter(
-                (item) => !item.is_active
-              ).length
-            }
+            {summary.inactive_classes}
           </p>
         </div>
       </section>
 
-      {/* Search */}
+      {/* SEARCH / PAGE SIZE / REFRESH */}
       <section className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
@@ -208,18 +292,41 @@ export default function AdminClassesPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
+              onChange={(event) => {
+                setSearch(event.target.value);
+              }}
               placeholder="Search class, section or academic year..."
               className="h-11 w-full rounded-xl border border-gray-200 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-[#0075FF]"
             />
           </div>
 
+          <select
+            value={pageSize}
+            onChange={(event) => {
+              setPageSize(
+                Number(event.target.value)
+              );
+              setPage(1);
+            }}
+            aria-label="Classes per page"
+            className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none focus:border-[#0075FF]"
+          >
+            <option value={25}>
+              25 per page
+            </option>
+
+            <option value={50}>
+              50 per page
+            </option>
+
+            <option value={100}>
+              100 per page
+            </option>
+          </select>
+
           <button
-            onClick={loadClasses}
+            type="button"
+            onClick={handleRefresh}
             disabled={loading}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
           >
@@ -237,7 +344,7 @@ export default function AdminClassesPage() {
         </div>
       </section>
 
-      {/* Error */}
+      {/* ERROR MESSAGE */}
       {error && (
         <div className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
           <AlertCircle
@@ -257,7 +364,7 @@ export default function AdminClassesPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* CLASSES TABLE */}
       <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px]">
@@ -289,7 +396,7 @@ export default function AdminClassesPage() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan="5"
+                    colSpan={5}
                     className="px-6 py-14 text-center"
                   >
                     <RefreshCw
@@ -302,132 +409,167 @@ export default function AdminClassesPage() {
                     </p>
                   </td>
                 </tr>
-              ) : filteredClasses.length ===
-                0 ? (
+              ) : classes.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="5"
-                    className="px-6 py-14"
+                    colSpan={5}
+                    className="px-6 py-14 text-center"
                   >
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-[#0075FF]">
-                        <School
-                          size={22}
-                        />
-                      </div>
+                    <School
+                      size={24}
+                      className="mx-auto text-[#0075FF]"
+                    />
 
-                      <p className="mt-3 font-semibold text-gray-700">
-                        No classes found
-                      </p>
+                    <p className="mt-3 font-semibold text-gray-700">
+                      No classes found
+                    </p>
 
-                      <p className="mt-1 text-sm text-gray-400">
-                        Create your first
-                        school class.
-                      </p>
-                    </div>
+                    <p className="mt-1 text-sm text-gray-400">
+                      Try another search or add a new class.
+                    </p>
                   </td>
                 </tr>
               ) : (
-                filteredClasses.map(
-                  (item) => (
-                    <tr
-                      key={item.id}
-                      className="transition hover:bg-gray-50"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#0075FF]">
-                            <School
-                              size={18}
-                            />
-                          </div>
-
-                          <span className="text-sm font-semibold text-gray-800">
-                            {item.name}
-                          </span>
+                classes.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="transition hover:bg-gray-50"
+                  >
+                    {/* CLASS */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#0075FF]">
+                          <School size={18} />
                         </div>
-                      </td>
 
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {item.section}
-                      </td>
+                        <span className="text-sm font-semibold text-gray-800">
+                          {item.name}
+                        </span>
+                      </div>
+                    </td>
 
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {
-                          item.academic_year
-                        }
-                      </td>
+                    {/* SECTION */}
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {item.section}
+                    </td>
 
-                      <td className="px-6 py-4">
-                        {item.is_active ? (
-                          <span className="inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-                            Inactive
-                          </span>
-                        )}
-                      </td>
+                    {/* ACADEMIC YEAR */}
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {item.academic_year}
+                    </td>
 
-                      <td className="px-6 py-4">
-                        <div className="flex justify-end gap-2">
-                          <Link
-                            href={`/admin/classes/${item.id}/edit`}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#0075FF]"
-                            title="Edit class"
-                          >
-                            <Pencil
+                    {/* STATUS */}
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                          item.is_active
+                            ? "bg-green-50 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {item.is_active
+                          ? "Active"
+                          : "Inactive"}
+                      </span>
+                    </td>
+
+                    {/* ACTIONS */}
+                    <td className="px-6 py-4">
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/admin/classes/${item.id}/edit`}
+                          title="Edit class"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#0075FF]"
+                        >
+                          <Pencil size={16} />
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleStatusChange(item)
+                          }
+                          disabled={
+                            statusLoadingId === item.id
+                          }
+                          title={
+                            item.is_active
+                              ? "Deactivate"
+                              : "Activate"
+                          }
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:opacity-50 ${
+                            item.is_active
+                              ? "border-gray-200 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                              : "border-gray-200 text-gray-500 hover:border-green-200 hover:bg-green-50 hover:text-green-600"
+                          }`}
+                        >
+                          {statusLoadingId === item.id ? (
+                            <RefreshCw
                               size={16}
+                              className="animate-spin"
                             />
-                          </Link>
-
-                          <button
-                            onClick={() =>
-                              handleStatusChange(
-                                item
-                              )
-                            }
-                            disabled={
-                              statusLoadingId ===
-                              item.id
-                            }
-                            className={`flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:opacity-50 ${
-                              item.is_active
-                                ? "border-gray-200 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                                : "border-gray-200 text-gray-500 hover:border-green-200 hover:bg-green-50 hover:text-green-600"
-                            }`}
-                            title={
-                              item.is_active
-                                ? "Deactivate"
-                                : "Activate"
-                            }
-                          >
-                            {statusLoadingId ===
-                            item.id ? (
-                              <RefreshCw
-                                size={16}
-                                className="animate-spin"
-                              />
-                            ) : item.is_active ? (
-                              <PowerOff
-                                size={16}
-                              />
-                            ) : (
-                              <Power
-                                size={16}
-                              />
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                )
+                          ) : item.is_active ? (
+                            <PowerOff size={16} />
+                          ) : (
+                            <Power size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
+
+        {/* PAGINATION FOOTER */}
+        {!loading && !error && (
+          <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-500">
+              Showing {startRecord}–{endRecord} of{" "}
+              {pagination.total} classes
+            </p>
+
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">
+                Page {page} of {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPage((current) =>
+                    Math.max(1, current - 1)
+                  )
+                }
+                disabled={
+                  !pagination.has_previous
+                }
+                aria-label="Previous page"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPage((current) =>
+                    Math.min(totalPages, current + 1)
+                  )
+                }
+                disabled={
+                  !pagination.has_next
+                }
+                aria-label="Next page"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </section>
     </AdminShell>
   );
