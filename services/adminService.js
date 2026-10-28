@@ -6,7 +6,8 @@ export async function getAdminDashboardStats() {
   try {
     const token =
       typeof window !== "undefined"
-        ? localStorage.getItem("access_token")
+        ? sessionStorage.getItem("access_token") ||
+          localStorage.getItem("access_token")
         : null;
 
     const response = await fetch(

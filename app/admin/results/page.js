@@ -181,11 +181,25 @@ export default function AdminResultsPage() {
   const fetchJson = async (
     url
   ) => {
+    const token =
+      sessionStorage.getItem(
+        "access_token"
+      ) ||
+      localStorage.getItem(
+        "access_token"
+      );
+
     const response =
       await fetch(
         url,
         {
           method: "GET",
+          headers: {
+            ...(token && {
+              Authorization:
+                `Bearer ${token}`,
+            }),
+          },
           cache: "no-store",
         }
       );

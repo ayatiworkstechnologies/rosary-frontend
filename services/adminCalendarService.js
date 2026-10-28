@@ -7,7 +7,10 @@ function getToken() {
     return null;
   }
 
-  return localStorage.getItem("access_token");
+  return (
+    sessionStorage.getItem("access_token") ||
+    localStorage.getItem("access_token")
+  );
 }
 
 function getHeaders() {
