@@ -18,10 +18,30 @@ function getHeaders() {
 
   return {
     "Content-Type": "application/json",
-    ...(token && {
-      Authorization: `Bearer ${token}`,
-    }),
+    ...(token
+      ? {
+          Authorization: "Bearer " + token,
+        }
+      : {}),
   };
+}
+
+function clearExpiredSession() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const keys = [
+    "access_token",
+    "current_user",
+    "user_role",
+    "parent_login_admission_no",
+  ];
+
+  for (const key of keys) {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  }
 }
 
 async function handleResponse(
@@ -31,6 +51,18 @@ async function handleResponse(
   const data = await response
     .json()
     .catch(() => null);
+
+  if (
+    response.status === 401 &&
+    typeof window !== "undefined"
+  ) {
+    clearExpiredSession();
+    window.location.replace("/login");
+
+    throw new Error(
+      "Your session expired. Please sign in again."
+    );
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -95,8 +127,8 @@ export async function getAdminParents(
     params.toString();
 
   const url = query
-    ? `${API_URL}/admin/parents?${query}`
-    : `${API_URL}/admin/parents`;
+    ? `${API_URL}/admin/parent-options?${query}`
+    : `${API_URL}/admin/parent-options`;
 
   const response = await fetch(
     url,
