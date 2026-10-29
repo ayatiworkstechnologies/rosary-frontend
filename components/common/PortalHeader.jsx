@@ -205,9 +205,14 @@ export default function PortalHeader({
 
 
       setNotifications(
+        // The backend wraps the list in {"data": [...]}, so checking
+        // Array.isArray(items) alone always rejected the payload and the
+        // dropdown showed "No notifications yet" even with unread items.
         Array.isArray(items)
           ? items
-          : []
+          : Array.isArray(items?.data)
+            ? items.data
+            : []
       );
 
 
