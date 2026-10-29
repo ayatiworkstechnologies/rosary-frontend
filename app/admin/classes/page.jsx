@@ -9,6 +9,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import {
   getAdminClasses,
   updateAdminClassStatus,
+  deleteAdminClass,
 } from "@/services/adminClassService";
 
 import {
@@ -22,6 +23,7 @@ import {
   PowerOff,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 
 export default function AdminClassesPage() {
@@ -32,6 +34,7 @@ export default function AdminClassesPage() {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusLoadingId, setStatusLoadingId] = useState(null);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
@@ -136,7 +139,6 @@ export default function AdminClassesPage() {
 
   // =========================================================
   // LOAD ON PAGE / SEARCH / PAGE SIZE CHANGE
-  // FIX: DEFER STATE UPDATES OUTSIDE EFFECT BODY
   // =========================================================
 
   useEffect(() => {
@@ -167,15 +169,15 @@ export default function AdminClassesPage() {
   // =========================================================
 
   const handleStatusChange = async (item) => {
+    if (deleteLoadingId !== null) return;
+
     const newStatus = !item.is_active;
 
     const message = newStatus
       ? `Activate ${item.name} - ${item.section}?`
       : `Deactivate ${item.name} - ${item.section}?`;
 
-    if (!window.confirm(message)) {
-      return;
-    }
+    if (!window.confirm(message)) return;
 
     try {
       setStatusLoadingId(item.id);
@@ -185,7 +187,6 @@ export default function AdminClassesPage() {
         newStatus
       );
 
-      // Refresh both current page and summary counts.
       handleRefresh();
     } catch (err) {
       console.error(
@@ -199,6 +200,51 @@ export default function AdminClassesPage() {
       );
     } finally {
       setStatusLoadingId(null);
+    }
+  };
+
+  // =========================================================
+  // DELETE CLASS
+  // =========================================================
+
+  const handleDeleteClass = async (item) => {
+    if (
+      deleteLoadingId !== null ||
+      statusLoadingId !== null
+    ) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete ${item.name} - ${item.section} (${item.academic_year})?\n\n` +
+        "This action cannot be undone.\n\n" +
+        "Classes with linked school records cannot be deleted."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleteLoadingId(item.id);
+
+      await deleteAdminClass(item.id);
+
+      window.alert("Class deleted successfully.");
+
+      // Move to the previous page if this was
+      // the final record on the current page.
+      if (classes.length === 1 && page > 1) {
+        setPage((current) => Math.max(1, current - 1));
+      } else {
+        handleRefresh();
+      }
+    } catch (err) {
+      console.error("Delete class error:", err);
+
+      window.alert(
+        err?.message || "Unable to delete class."
+      );
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
@@ -303,25 +349,15 @@ export default function AdminClassesPage() {
           <select
             value={pageSize}
             onChange={(event) => {
-              setPageSize(
-                Number(event.target.value)
-              );
+              setPageSize(Number(event.target.value));
               setPage(1);
             }}
             aria-label="Classes per page"
             className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none focus:border-[#0075FF]"
           >
-            <option value={25}>
-              25 per page
-            </option>
-
-            <option value={50}>
-              50 per page
-            </option>
-
-            <option value={100}>
-              100 per page
-            </option>
+            <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
+            <option value={100}>100 per page</option>
           </select>
 
           <button
@@ -332,13 +368,8 @@ export default function AdminClassesPage() {
           >
             <RefreshCw
               size={17}
-              className={
-                loading
-                  ? "animate-spin"
-                  : ""
-              }
+              className={loading ? "animate-spin" : ""}
             />
-
             Refresh
           </button>
         </div>
@@ -476,6 +507,7 @@ export default function AdminClassesPage() {
                     {/* ACTIONS */}
                     <td className="px-6 py-4">
                       <div className="flex justify-end gap-2">
+                        {/* EDIT */}
                         <Link
                           href={`/admin/classes/${item.id}/edit`}
                           title="Edit class"
@@ -484,13 +516,15 @@ export default function AdminClassesPage() {
                           <Pencil size={16} />
                         </Link>
 
+                        {/* ACTIVATE / DEACTIVATE */}
                         <button
                           type="button"
                           onClick={() =>
                             handleStatusChange(item)
                           }
                           disabled={
-                            statusLoadingId === item.id
+                            statusLoadingId !== null ||
+                            deleteLoadingId !== null
                           }
                           title={
                             item.is_active
@@ -512,6 +546,30 @@ export default function AdminClassesPage() {
                             <PowerOff size={16} />
                           ) : (
                             <Power size={16} />
+                          )}
+                        </button>
+
+                        {/* DELETE */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteClass(item)
+                          }
+                          disabled={
+                            deleteLoadingId !== null ||
+                            statusLoadingId !== null
+                          }
+                          title="Delete class"
+                          aria-label={`Delete ${item.name} - ${item.section}`}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deleteLoadingId === item.id ? (
+                            <RefreshCw
+                              size={16}
+                              className="animate-spin"
+                            />
+                          ) : (
+                            <Trash2 size={16} />
                           )}
                         </button>
                       </div>
@@ -543,9 +601,7 @@ export default function AdminClassesPage() {
                     Math.max(1, current - 1)
                   )
                 }
-                disabled={
-                  !pagination.has_previous
-                }
+                disabled={!pagination.has_previous}
                 aria-label="Previous page"
                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -559,9 +615,7 @@ export default function AdminClassesPage() {
                     Math.min(totalPages, current + 1)
                   )
                 }
-                disabled={
-                  !pagination.has_next
-                }
+                disabled={!pagination.has_next}
                 aria-label="Next page"
                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
               >

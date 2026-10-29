@@ -5,6 +5,7 @@ import api from "@/services/api";
 // GET TEACHER CLASSES
 // GET /api/v1/teacher/classes
 // =========================================================
+
 export async function getTeacherClasses() {
   const response = await api.get(
     "/teacher/classes"
@@ -19,6 +20,7 @@ export async function getTeacherClasses() {
 // GET /api/v1/teacher/classes/{classId}/students
 // Optional search query
 // =========================================================
+
 export async function getTeacherStudents(
   classId,
   search = ""
@@ -32,7 +34,8 @@ export async function getTeacherStudents(
   const params = {};
 
   if (search.trim()) {
-    params.search = search.trim();
+    params.search =
+      search.trim();
   }
 
   const response = await api.get(
@@ -47,9 +50,10 @@ export async function getTeacherStudents(
 
 
 // =========================================================
-// GET ATTENDANCE FOR A CLASS + DATE
+// GET ATTENDANCE FOR CLASS + DATE
 // GET /api/v1/teacher/classes/{classId}/attendance
 // =========================================================
+
 export async function getTeacherAttendance(
   classId,
   attendanceDate
@@ -70,7 +74,8 @@ export async function getTeacherAttendance(
     `/teacher/classes/${classId}/attendance`,
     {
       params: {
-        attendance_date: attendanceDate,
+        attendance_date:
+          attendanceDate,
       },
     }
   );
@@ -83,6 +88,7 @@ export async function getTeacherAttendance(
 // SAVE ATTENDANCE
 // POST /api/v1/teacher/classes/{classId}/attendance
 // =========================================================
+
 export async function saveTeacherAttendance(
   classId,
   payload
@@ -106,6 +112,7 @@ export async function saveTeacherAttendance(
 
   return response.data;
 }
+
 
 // =========================================================
 // GET HOMEWORK
@@ -190,8 +197,10 @@ export async function createTeacherHomework(
   return response.data;
 }
 
+
 // =========================================================
 // GET TEACHER EXAMS
+// GET /teacher/exams
 // =========================================================
 
 export async function getTeacherExams() {
@@ -205,6 +214,7 @@ export async function getTeacherExams() {
 
 // =========================================================
 // GET CLASS RESULTS
+// GET /teacher/classes/{classId}/results
 // =========================================================
 
 export async function getTeacherResults(
@@ -246,6 +256,7 @@ export async function getTeacherResults(
 
 // =========================================================
 // SAVE CLASS RESULTS
+// POST /teacher/classes/{classId}/results
 // =========================================================
 
 export async function saveTeacherResults(
@@ -271,6 +282,7 @@ export async function saveTeacherResults(
 
   return response.data;
 }
+
 
 // =========================================================
 // GET TEACHER EXAM SCHEDULE
@@ -306,6 +318,123 @@ export async function getTeacherExamSchedule(
   return response.data;
 }
 
+
+// =========================================================
+// CREATE TEACHER EXAM SCHEDULE
+// POST /teacher/exam-schedule
+// =========================================================
+
+export async function createTeacherExamSchedule(
+  payload
+) {
+  if (!payload) {
+    throw new Error(
+      "Exam schedule data is required."
+    );
+  }
+
+  if (!payload.class_id) {
+    throw new Error(
+      "Class is required."
+    );
+  }
+
+  if (!payload.exam_id) {
+    throw new Error(
+      "Examination is required."
+    );
+  }
+
+  if (
+    !payload.subject?.trim()
+  ) {
+    throw new Error(
+      "Subject is required."
+    );
+  }
+
+  if (!payload.exam_date) {
+    throw new Error(
+      "Exam date is required."
+    );
+  }
+
+  if (!payload.start_time) {
+    throw new Error(
+      "Start time is required."
+    );
+  }
+
+  if (!payload.end_time) {
+    throw new Error(
+      "End time is required."
+    );
+  }
+
+  const response =
+    await api.post(
+      "/teacher/exam-schedule",
+      payload
+    );
+
+  return response.data;
+}
+
+
+// =========================================================
+// UPDATE TEACHER EXAM SCHEDULE
+// PUT /teacher/exam-schedule/{scheduleId}
+// =========================================================
+
+export async function updateTeacherExamSchedule(
+  scheduleId,
+  payload
+) {
+  if (!scheduleId) {
+    throw new Error(
+      "Schedule ID is required."
+    );
+  }
+
+  if (!payload) {
+    throw new Error(
+      "Exam schedule data is required."
+    );
+  }
+
+  const response =
+    await api.put(
+      `/teacher/exam-schedule/${scheduleId}`,
+      payload
+    );
+
+  return response.data;
+}
+
+
+// =========================================================
+// DELETE TEACHER EXAM SCHEDULE
+// DELETE /teacher/exam-schedule/{scheduleId}
+// =========================================================
+
+export async function deleteTeacherExamSchedule(
+  scheduleId
+) {
+  if (!scheduleId) {
+    throw new Error(
+      "Schedule ID is required."
+    );
+  }
+
+  const response =
+    await api.delete(
+      `/teacher/exam-schedule/${scheduleId}`
+    );
+
+  return response.data;
+}
+
+
 // =========================================================
 // GET TEACHER CIRCULARS
 // GET /teacher/circulars
@@ -340,6 +469,7 @@ export async function getTeacherCirculars(
   return response.data;
 }
 
+
 // =========================================================
 // GET TEACHER SCHOOL CALENDAR
 // GET /teacher/calendar
@@ -367,6 +497,8 @@ export async function getTeacherSchoolCalendar(
 
   return response.data;
 }
+
+
 // =========================================================
 // GET TEACHER PROFILE
 // GET /teacher/profile

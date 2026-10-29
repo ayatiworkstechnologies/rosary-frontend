@@ -164,3 +164,36 @@ export async function updateAdminClassStatus(
     "Unable to update class status"
   );
 }
+
+
+/* =========================================================
+   DELETE ADMIN CLASS
+   DELETE /api/v1/admin/classes/{classId}
+========================================================= */
+
+export async function deleteAdminClass(classId) {
+  if (!classId) {
+    throw new Error("Class ID is required.");
+  }
+
+  const response = await fetch(
+    `${API_URL}/admin/classes/${classId}`,
+    {
+      method: "DELETE",
+      headers: getHeaders(),
+      cache: "no-store",
+    }
+  );
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      result.detail ||
+      result.message ||
+      "Failed to delete class."
+    );
+  }
+
+  return result;
+}

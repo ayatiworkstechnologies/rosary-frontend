@@ -1,5 +1,7 @@
 "use client";
+
 import { useSearchParams } from "next/navigation";
+
 import {
   useEffect,
   useMemo,
@@ -13,31 +15,72 @@ import {
   GraduationCap,
   Loader2,
   MapPin,
+  Pencil,
+  Plus,
   Search,
+  Trash2,
+  X,
 } from "lucide-react";
 
 import {
+  createTeacherExamSchedule,
+  deleteTeacherExamSchedule,
   getTeacherClasses,
   getTeacherExams,
   getTeacherExamSchedule,
+  updateTeacherExamSchedule,
 } from "@/services/teacherService";
+
+
+// =========================================================
+// CONSTANTS
+// =========================================================
+
+const EMPTY_FORM = {
+  class_id: "",
+  exam_id: "",
+  subject: "",
+  exam_date: "",
+  start_time: "",
+  end_time: "",
+  room: "",
+  instructions: "",
+};
+
+
+const inputClass = `
+  h-11
+  w-full
+  rounded-xl
+  border
+  border-[#DCE8F5]
+  bg-white
+  px-4
+  text-sm
+  text-[#0B3A67]
+  outline-none
+  transition
+  focus:border-[#0075FF]
+  focus:ring-2
+  focus:ring-blue-100
+  disabled:cursor-not-allowed
+  disabled:bg-slate-50
+  disabled:text-slate-500
+`;
 
 
 // =========================================================
 // FORMAT DATE
 // =========================================================
 
-function formatDate(
-  dateString
-) {
+function formatDate(dateString) {
   if (!dateString) {
     return "--";
   }
 
-  const date =
-    new Date(
-      `${dateString}T00:00:00`
-    );
+  const date = new Date(
+    `${dateString}T00:00:00`
+  );
 
   return date.toLocaleDateString(
     "en-IN",
@@ -55,17 +98,21 @@ function formatDate(
 // FORMAT TIME
 // =========================================================
 
-function formatTime(
-  value
-) {
+function formatTime(value) {
   if (!value) {
     return "--";
   }
 
+  const cleanValue =
+    String(value).slice(
+      0,
+      5
+    );
+
   const [
     hours,
     minutes,
-  ] = value.split(":");
+  ] = cleanValue.split(":");
 
   const date =
     new Date();
@@ -90,11 +137,58 @@ function formatTime(
 
 
 // =========================================================
+// ERROR MESSAGE
+// =========================================================
+
+function getErrorMessage(
+  error,
+  fallback
+) {
+  const detail =
+    error?.response
+      ?.data?.detail;
+
+  if (
+    typeof detail ===
+    "string"
+  ) {
+    return detail;
+  }
+
+  if (
+    Array.isArray(detail)
+  ) {
+    return detail
+      .map(
+        (item) =>
+          item?.msg ||
+          JSON.stringify(
+            item
+          )
+      )
+      .join(", ");
+  }
+
+  return (
+    error?.message ||
+    fallback
+  );
+}
+
+
+// =========================================================
 // PAGE
 // =========================================================
 
 export default function TeacherExamSchedulePage() {
-  const searchParams = useSearchParams();
+  const searchParams =
+    useSearchParams();
+
+
+  // =======================================================
+  // STATE
+  // =======================================================
+
   const [
     classes,
     setClasses,
@@ -126,14 +220,282 @@ export default function TeacherExamSchedulePage() {
   ] = useState("");
 
   const [
-    loading,
-    setLoading,
+    initialLoading,
+    setInitialLoading,
   ] = useState(true);
+
+  const [
+    scheduleLoading,
+    setScheduleLoading,
+  ] = useState(false);
+
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+
+  const [
+    deletingId,
+    setDeletingId,
+  ] = useState(null);
 
   const [
     error,
     setError,
   ] = useState("");
+
+  const [
+    success,
+    setSuccess,
+  ] = useState("");
+
+  const [
+    modalOpen,
+    setModalOpen,
+  ] = useState(false);
+
+  const [
+    editingSchedule,
+    setEditingSchedule,
+  ] = useState(null);
+
+  const [
+    form,
+    setForm,
+  ] = useState({
+    ...EMPTY_FORM,
+  });
+
+  const [
+    refreshKey,
+    setRefreshKey,
+  ] = useState(0);
+
+
+  // =======================================================
+  // UNIQUE CLASSES
+  // =======================================================
+
+  const uniqueClasses =
+    useMemo(() => {
+      const map =
+        new Map();
+
+      classes.forEach(
+        (item) => {
+          const classId =
+            item?.id ??
+            item?.class_id;
+
+          if (
+            classId ===
+              undefined ||
+            classId ===
+              null
+          ) {
+            return;
+          }
+
+          const key =
+            String(
+              classId
+            );
+
+          if (
+            !map.has(key)
+          ) {
+            map.set(
+              key,
+              {
+                ...item,
+                id: classId,
+              }
+            );
+          }
+        }
+      );
+
+      return Array.from(
+        map.values()
+      );
+    }, [classes]);
+
+
+  // =======================================================
+  // SELECTED CLASS SUBJECTS
+  // =======================================================
+
+  const subjectsForSelectedClass =
+    useMemo(() => {
+      if (
+        !selectedClassId
+      ) {
+        return [];
+      }
+
+      const values = [];
+
+      classes
+        .filter(
+          (item) =>
+            String(
+              item?.id ??
+                item?.class_id
+            ) ===
+            String(
+              selectedClassId
+            )
+        )
+        .forEach(
+          (item) => {
+            if (
+              item?.subject
+            ) {
+              values.push(
+                String(
+                  item.subject
+                ).trim()
+              );
+            }
+
+            if (
+              Array.isArray(
+                item?.subjects
+              )
+            ) {
+              item.subjects.forEach(
+                (subject) => {
+                  if (
+                    typeof subject ===
+                    "string"
+                  ) {
+                    values.push(
+                      subject.trim()
+                    );
+                  } else if (
+                    subject?.name
+                  ) {
+                    values.push(
+                      String(
+                        subject.name
+                      ).trim()
+                    );
+                  }
+                }
+              );
+            }
+          }
+        );
+
+      return [
+        ...new Set(
+          values.filter(
+            Boolean
+          )
+        ),
+      ].sort(
+        (a, b) =>
+          a.localeCompare(b)
+      );
+
+    }, [
+      classes,
+      selectedClassId,
+    ]);
+
+
+  // =======================================================
+  // MODAL SUBJECTS
+  // =======================================================
+
+  const modalSubjects =
+    useMemo(() => {
+      if (
+        !form.class_id
+      ) {
+        return [];
+      }
+
+      const values = [];
+
+      classes
+        .filter(
+          (item) =>
+            String(
+              item?.id ??
+                item?.class_id
+            ) ===
+            String(
+              form.class_id
+            )
+        )
+        .forEach(
+          (item) => {
+            if (
+              item?.subject
+            ) {
+              values.push(
+                String(
+                  item.subject
+                ).trim()
+              );
+            }
+
+            if (
+              Array.isArray(
+                item?.subjects
+              )
+            ) {
+              item.subjects.forEach(
+                (subject) => {
+                  if (
+                    typeof subject ===
+                    "string"
+                  ) {
+                    values.push(
+                      subject.trim()
+                    );
+                  } else if (
+                    subject?.name
+                  ) {
+                    values.push(
+                      String(
+                        subject.name
+                      ).trim()
+                    );
+                  }
+                }
+              );
+            }
+          }
+        );
+
+      if (
+        editingSchedule
+          ?.subject
+      ) {
+        values.push(
+          editingSchedule
+            .subject
+        );
+      }
+
+      return [
+        ...new Set(
+          values.filter(
+            Boolean
+          )
+        ),
+      ].sort(
+        (a, b) =>
+          a.localeCompare(b)
+      );
+
+    }, [
+      classes,
+      form.class_id,
+      editingSchedule,
+    ]);
 
 
   // =======================================================
@@ -141,110 +503,159 @@ export default function TeacherExamSchedulePage() {
   // =======================================================
 
   useEffect(() => {
-    const loadInitial =
-      async () => {
-        try {
-          setLoading(
-            true
+    let cancelled =
+      false;
+
+    async function fetchInitialData() {
+      try {
+        const [
+          classData,
+          examData,
+        ] =
+          await Promise.all([
+            getTeacherClasses(),
+            getTeacherExams(),
+          ]);
+
+        if (
+          cancelled
+        ) {
+          return;
+        }
+
+        const safeClasses =
+          Array.isArray(
+            classData
+          )
+            ? classData
+            : [];
+
+        const safeExams =
+          Array.isArray(
+            examData
+          )
+            ? examData
+            : [];
+
+        setClasses(
+          safeClasses
+        );
+
+        setExams(
+          safeExams
+        );
+
+
+        // -----------------------------------------------
+        // CLASS FROM URL
+        // -----------------------------------------------
+
+        const queryClassId =
+          searchParams.get(
+            "class_id"
           );
 
-          setError("");
-
-          const [
-            classData,
-            examData,
-          ] =
-            await Promise.all([
-              getTeacherClasses(),
-              getTeacherExams(),
-            ]);
-
-          const safeClasses =
-            Array.isArray(
-              classData
-            )
-              ? classData
-              : [];
-
-          const safeExams =
-            Array.isArray(
-              examData
-            )
-              ? examData
-              : [];
-
-          setClasses(
-            safeClasses
-          );
-
-          setExams(
-            safeExams
-          );
-
-
-          const queryClassId =
-          searchParams.get("class_id");
-
-        const assignedClassExists =
-          safeClasses.some(
+        const availableIds =
+          safeClasses.map(
             (item) =>
-              String(item.id) ===
-              String(queryClassId)
+              String(
+                item?.id ??
+                  item?.class_id
+              )
           );
 
         if (
           queryClassId &&
-          assignedClassExists
+          availableIds.includes(
+            String(
+              queryClassId
+            )
+          )
         ) {
           setSelectedClassId(
-            String(queryClassId)
+            String(
+              queryClassId
+            )
           );
+
         } else if (
-          safeClasses.length > 0
+          safeClasses.length >
+          0
         ) {
           setSelectedClassId(
-            String(safeClasses[0].id)
+            String(
+              safeClasses[0]
+                ?.id ??
+                safeClasses[0]
+                  ?.class_id
+            )
           );
         }
 
 
-          if (
-            safeExams.length >
-            0
-          ) {
-            setSelectedExamId(
-              String(
-                safeExams[0].id
-              )
-            );
-          }
+        // -----------------------------------------------
+        // DEFAULT EXAM
+        // -----------------------------------------------
 
-        } catch (err) {
-          console.error(
-            err
+        if (
+          safeExams.length >
+          0
+        ) {
+          setSelectedExamId(
+            String(
+              safeExams[0].id
+            )
           );
+        }
 
-          setError(
-            err?.response
-              ?.data
-              ?.detail ||
-            "Unable to load schedule filters."
-          );
+        setError("");
 
-        } finally {
-          setLoading(
+      } catch (err) {
+        if (
+          cancelled
+        ) {
+          return;
+        }
+
+        console.error(
+          "Initial data error:",
+          err
+        );
+
+        setError(
+          getErrorMessage(
+            err,
+            "Unable to load exam schedule filters."
+          )
+        );
+
+      } finally {
+        if (
+          !cancelled
+        ) {
+          setInitialLoading(
             false
           );
         }
-      };
+      }
+    }
 
-    loadInitial();
+    fetchInitialData();
+
+    return () => {
+      cancelled =
+        true;
+    };
 
   }, [searchParams]);
 
 
   // =======================================================
   // LOAD SCHEDULE
+  //
+  // IMPORTANT:
+  // No loadSchedule() helper.
+  // No synchronous setSchedules() in effect body.
   // =======================================================
 
   useEffect(() => {
@@ -254,65 +665,95 @@ export default function TeacherExamSchedulePage() {
       return;
     }
 
-    const loadSchedule =
-      async () => {
-        try {
-          setLoading(
-            true
+    let cancelled =
+      false;
+
+    async function fetchSchedule() {
+      try {
+        // This is inside async execution,
+        // not directly in the effect body.
+        setScheduleLoading(
+          true
+        );
+
+        const data =
+          await getTeacherExamSchedule(
+            {
+              classId:
+                selectedClassId,
+
+              examId:
+                selectedExamId,
+            }
           );
 
-          setError("");
+        if (
+          cancelled
+        ) {
+          return;
+        }
 
-          const data =
-            await getTeacherExamSchedule(
-              {
-                classId:
-                  selectedClassId,
+        const safeSchedules =
+          Array.isArray(
+            data?.schedules
+          )
+            ? data.schedules
+            : [];
 
-                examId:
-                  selectedExamId,
-              }
-            );
+        setSchedules(
+          safeSchedules
+        );
 
-          setSchedules(
-            Array.isArray(
-              data?.schedules
-            )
-              ? data.schedules
-              : []
-          );
+        setError("");
 
-        } catch (err) {
-          console.error(
-            err
-          );
+      } catch (err) {
+        if (
+          cancelled
+        ) {
+          return;
+        }
 
-          setSchedules([]);
+        console.error(
+          "Schedule loading error:",
+          err
+        );
 
-          setError(
-            err?.response
-              ?.data
-              ?.detail ||
+        setSchedules([]);
+
+        setError(
+          getErrorMessage(
+            err,
             "Unable to load exam schedule."
-          );
+          )
+        );
 
-        } finally {
-          setLoading(
+      } finally {
+        if (
+          !cancelled
+        ) {
+          setScheduleLoading(
             false
           );
         }
-      };
+      }
+    }
 
-    loadSchedule();
+    fetchSchedule();
+
+    return () => {
+      cancelled =
+        true;
+    };
 
   }, [
     selectedClassId,
     selectedExamId,
+    refreshKey,
   ]);
 
 
   // =======================================================
-  // SEARCH
+  // FILTER SCHEDULE
   // =======================================================
 
   const filteredSchedules =
@@ -322,23 +763,54 @@ export default function TeacherExamSchedulePage() {
           .trim()
           .toLowerCase();
 
-      if (!value) {
+      if (
+        !value
+      ) {
         return schedules;
       }
 
       return schedules.filter(
-        (item) =>
-          item.subject
-            ?.toLowerCase()
-            .includes(value) ||
+        (item) => {
+          const subject =
+            String(
+              item?.subject ||
+                ""
+            ).toLowerCase();
 
-          item.exam_name
-            ?.toLowerCase()
-            .includes(value) ||
+          const examName =
+            String(
+              item?.exam_name ||
+                ""
+            ).toLowerCase();
 
-          item.name
-            ?.toLowerCase()
-            .includes(value)
+          const className =
+            String(
+              item?.name ||
+                item?.class_name ||
+                ""
+            ).toLowerCase();
+
+          const room =
+            String(
+              item?.room ||
+                ""
+            ).toLowerCase();
+
+          return (
+            subject.includes(
+              value
+            ) ||
+            examName.includes(
+              value
+            ) ||
+            className.includes(
+              value
+            ) ||
+            room.includes(
+              value
+            )
+          );
+        }
       );
 
     }, [
@@ -348,26 +820,637 @@ export default function TeacherExamSchedulePage() {
 
 
   // =======================================================
+  // ADD MODAL
+  // =======================================================
+
+  function openAddModal() {
+    setEditingSchedule(
+      null
+    );
+
+    setError("");
+    setSuccess("");
+
+    const defaultSubject =
+      subjectsForSelectedClass
+        .length === 1
+        ? subjectsForSelectedClass[
+            0
+          ]
+        : "";
+
+    setForm({
+      ...EMPTY_FORM,
+
+      class_id:
+        selectedClassId,
+
+      exam_id:
+        selectedExamId,
+
+      subject:
+        defaultSubject,
+    });
+
+    setModalOpen(
+      true
+    );
+  }
+
+
+  // =======================================================
+  // EDIT MODAL
+  // =======================================================
+
+  function openEditModal(
+    item
+  ) {
+    setEditingSchedule(
+      item
+    );
+
+    setError("");
+    setSuccess("");
+
+    setForm({
+      class_id:
+        String(
+          item?.class_id ??
+            selectedClassId
+        ),
+
+      exam_id:
+        String(
+          item?.exam_id ??
+            selectedExamId
+        ),
+
+      subject:
+        item?.subject ||
+        "",
+
+      exam_date:
+        item?.exam_date ||
+        "",
+
+      start_time:
+        item?.start_time
+          ? String(
+              item.start_time
+            ).slice(
+              0,
+              5
+            )
+          : "",
+
+      end_time:
+        item?.end_time
+          ? String(
+              item.end_time
+            ).slice(
+              0,
+              5
+            )
+          : "",
+
+      room:
+        item?.room ||
+        "",
+
+      instructions:
+        item?.instructions ||
+        "",
+    });
+
+    setModalOpen(
+      true
+    );
+  }
+
+
+  // =======================================================
+  // CLOSE MODAL
+  // =======================================================
+
+  function closeModal() {
+    if (
+      saving
+    ) {
+      return;
+    }
+
+    setModalOpen(
+      false
+    );
+
+    setEditingSchedule(
+      null
+    );
+
+    setForm({
+      ...EMPTY_FORM,
+    });
+
+    setError("");
+  }
+
+
+  // =======================================================
+  // FORM CHANGE
+  // =======================================================
+
+  function handleFormChange(
+    event
+  ) {
+    const {
+      name,
+      value,
+    } = event.target;
+
+    setForm(
+      (previous) => ({
+        ...previous,
+        [name]:
+          value,
+      })
+    );
+  }
+
+
+  // =======================================================
+  // CLASS CHANGE INSIDE MODAL
+  // =======================================================
+
+  function handleModalClassChange(
+    event
+  ) {
+    const classId =
+      event.target.value;
+
+    const values = [];
+
+    classes
+      .filter(
+        (item) =>
+          String(
+            item?.id ??
+              item?.class_id
+          ) ===
+          String(
+            classId
+          )
+      )
+      .forEach(
+        (item) => {
+          if (
+            item?.subject
+          ) {
+            values.push(
+              String(
+                item.subject
+              ).trim()
+            );
+          }
+
+          if (
+            Array.isArray(
+              item?.subjects
+            )
+          ) {
+            item.subjects.forEach(
+              (subject) => {
+                if (
+                  typeof subject ===
+                  "string"
+                ) {
+                  values.push(
+                    subject.trim()
+                  );
+                } else if (
+                  subject?.name
+                ) {
+                  values.push(
+                    String(
+                      subject.name
+                    ).trim()
+                  );
+                }
+              }
+            );
+          }
+        }
+      );
+
+    const uniqueSubjects =
+      [
+        ...new Set(
+          values.filter(
+            Boolean
+          )
+        ),
+      ];
+
+    setForm(
+      (previous) => ({
+        ...previous,
+
+        class_id:
+          classId,
+
+        subject:
+          uniqueSubjects
+            .length === 1
+            ? uniqueSubjects[
+                0
+              ]
+            : "",
+      })
+    );
+  }
+
+
+  // =======================================================
+  // SAVE
+  // =======================================================
+
+  async function handleSubmit(
+    event
+  ) {
+    event.preventDefault();
+
+    setError("");
+    setSuccess("");
+
+
+    // -----------------------------------------------
+    // VALIDATION
+    // -----------------------------------------------
+
+    if (
+      !form.class_id
+    ) {
+      setError(
+        "Class is required."
+      );
+
+      return;
+    }
+
+    if (
+      !form.exam_id
+    ) {
+      setError(
+        "Examination is required."
+      );
+
+      return;
+    }
+
+    if (
+      !form.subject.trim()
+    ) {
+      setError(
+        "Subject is required."
+      );
+
+      return;
+    }
+
+    if (
+      !form.exam_date
+    ) {
+      setError(
+        "Exam date is required."
+      );
+
+      return;
+    }
+
+    if (
+      !form.start_time
+    ) {
+      setError(
+        "Start time is required."
+      );
+
+      return;
+    }
+
+    if (
+      !form.end_time
+    ) {
+      setError(
+        "End time is required."
+      );
+
+      return;
+    }
+
+    if (
+      form.end_time <=
+      form.start_time
+    ) {
+      setError(
+        "End time must be after start time."
+      );
+
+      return;
+    }
+
+
+    // -----------------------------------------------
+    // CREATE PAYLOAD
+    // -----------------------------------------------
+
+    const createPayload = {
+      class_id:
+        Number(
+          form.class_id
+        ),
+
+      exam_id:
+        Number(
+          form.exam_id
+        ),
+
+      subject:
+        form.subject.trim(),
+
+      exam_date:
+        form.exam_date,
+
+      start_time:
+        form.start_time,
+
+      end_time:
+        form.end_time,
+
+      room:
+        form.room.trim(),
+
+      instructions:
+        form.instructions.trim(),
+    };
+
+
+    // -----------------------------------------------
+    // UPDATE PAYLOAD
+    // -----------------------------------------------
+
+    const updatePayload = {
+      exam_date:
+        form.exam_date,
+
+      start_time:
+        form.start_time,
+
+      end_time:
+        form.end_time,
+
+      room:
+        form.room.trim(),
+
+      instructions:
+        form.instructions.trim(),
+    };
+
+
+    try {
+      setSaving(
+        true
+      );
+
+
+      if (
+        editingSchedule
+      ) {
+        await updateTeacherExamSchedule(
+          editingSchedule.id,
+          updatePayload
+        );
+
+        setSuccess(
+          "Exam schedule updated successfully."
+        );
+
+      } else {
+        await createTeacherExamSchedule(
+          createPayload
+        );
+
+        setSuccess(
+          "Exam schedule created successfully."
+        );
+      }
+
+
+      setModalOpen(
+        false
+      );
+
+      setEditingSchedule(
+        null
+      );
+
+      setForm({
+        ...EMPTY_FORM,
+      });
+
+
+      // -----------------------------------------------
+      // REFRESH SCHEDULE
+      // -----------------------------------------------
+
+      setRefreshKey(
+        (previous) =>
+          previous + 1
+      );
+
+    } catch (err) {
+      console.error(
+        "Schedule save error:",
+        err
+      );
+
+      setError(
+        getErrorMessage(
+          err,
+          editingSchedule
+            ? "Unable to update exam schedule."
+            : "Unable to create exam schedule."
+        )
+      );
+
+    } finally {
+      setSaving(
+        false
+      );
+    }
+  }
+
+
+  // =======================================================
+  // DELETE
+  // =======================================================
+
+  async function handleDelete(
+    item
+  ) {
+    const confirmed =
+      window.confirm(
+        `Delete ${item.subject} schedule for ${item.exam_name}?`
+      );
+
+    if (
+      !confirmed
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingId(
+        item.id
+      );
+
+      setError("");
+      setSuccess("");
+
+      await deleteTeacherExamSchedule(
+        item.id
+      );
+
+      setSuccess(
+        "Exam schedule deleted successfully."
+      );
+
+      setRefreshKey(
+        (previous) =>
+          previous + 1
+      );
+
+    } catch (err) {
+      console.error(
+        "Schedule delete error:",
+        err
+      );
+
+      setError(
+        getErrorMessage(
+          err,
+          "Unable to delete exam schedule."
+        )
+      );
+
+    } finally {
+      setDeletingId(
+        null
+      );
+    }
+  }
+
+
+  // =======================================================
+  // LOADING
+  // =======================================================
+
+  const loading =
+    initialLoading ||
+    scheduleLoading;
+
+
+  // =======================================================
   // UI
   // =======================================================
 
   return (
     <div className="mx-auto max-w-[1400px]">
 
+      {/* ================================================= */}
       {/* HEADER */}
+      {/* ================================================= */}
 
-      <div>
-        <h1 className="text-2xl font-bold text-[#0B3A67]">
-          Exam Schedule
-        </h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-        <p className="mt-1 text-sm text-slate-500">
-          View upcoming examination dates and timings.
-        </p>
+        <div>
+
+          <h1 className="text-2xl font-bold text-[#0B3A67]">
+            Exam Schedule
+          </h1>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Create and manage examination
+            schedules for your assigned
+            classes and subjects.
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          onClick={
+            openAddModal
+          }
+          disabled={
+            !selectedClassId ||
+            exams.length === 0
+          }
+          className="
+            inline-flex
+            h-11
+            items-center
+            justify-center
+            gap-2
+            rounded-xl
+            bg-[#0075FF]
+            px-5
+            text-sm
+            font-semibold
+            text-white
+            transition
+            hover:bg-[#0066dd]
+            disabled:cursor-not-allowed
+            disabled:opacity-50
+          "
+        >
+
+          <Plus
+            size={18}
+          />
+
+          Add Schedule
+
+        </button>
+
       </div>
 
 
+      {/* ================================================= */}
+      {/* SUCCESS */}
+      {/* ================================================= */}
+
+      {success && (
+        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+          {success}
+        </div>
+      )}
+
+
+      {/* ================================================= */}
+      {/* ERROR */}
+      {/* ================================================= */}
+
+      {error &&
+        !modalOpen && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
+
+      {/* ================================================= */}
       {/* FILTERS */}
+      {/* ================================================= */}
 
       <section
         className="
@@ -391,21 +1474,29 @@ export default function TeacherExamSchedulePage() {
           }
           onChange={(
             event
-          ) =>
+          ) => {
             setSelectedClassId(
               event.target.value
-            )
-          }
+            );
+
+            setSearch("");
+          }}
         >
 
-          {classes.map(
+          {uniqueClasses.map(
             (item) => (
               <option
-                key={item.id}
-                value={item.id}
+                key={
+                  item.id
+                }
+                value={
+                  item.id
+                }
               >
                 {
-                  item.display_name
+                  item.display_name ||
+                  item.class_name ||
+                  item.name
                 }
               </option>
             )
@@ -435,8 +1526,12 @@ export default function TeacherExamSchedulePage() {
           {exams.map(
             (exam) => (
               <option
-                key={exam.id}
-                value={exam.id}
+                key={
+                  exam.id
+                }
+                value={
+                  exam.id
+                }
               >
                 {exam.name}
               </option>
@@ -448,28 +1543,9 @@ export default function TeacherExamSchedulePage() {
       </section>
 
 
-      {/* ERROR */}
-
-      {error && (
-        <div
-          className="
-            mt-4
-            rounded-xl
-            border
-            border-red-200
-            bg-red-50
-            px-4
-            py-3
-            text-sm
-            text-red-600
-          "
-        >
-          {error}
-        </div>
-      )}
-
-
-      {/* LIST CARD */}
+      {/* ================================================= */}
+      {/* LIST */}
+      {/* ================================================= */}
 
       <section
         className="
@@ -483,21 +1559,11 @@ export default function TeacherExamSchedulePage() {
         "
       >
 
+        {/* =============================================== */}
         {/* LIST HEADER */}
+        {/* =============================================== */}
 
-        <div
-          className="
-            flex
-            flex-col
-            gap-4
-            border-b
-            border-[#E4EDF7]
-            p-4
-            sm:flex-row
-            sm:items-center
-            sm:justify-between
-          "
-        >
+        <div className="flex flex-col gap-4 border-b border-[#E4EDF7] p-4 sm:flex-row sm:items-center sm:justify-between">
 
           <div>
 
@@ -506,24 +1572,14 @@ export default function TeacherExamSchedulePage() {
             </h2>
 
             <p className="mt-1 text-xs text-slate-400">
-              {schedules.length} scheduled examination(s)
+              {schedules.length} scheduled
+              examination(s)
             </p>
 
           </div>
 
 
-          <div
-            className="
-              flex
-              w-full
-              items-center
-              rounded-xl
-              border
-              border-[#DCE8F5]
-              px-3
-              sm:w-[300px]
-            "
-          >
+          <div className="flex w-full items-center rounded-xl border border-[#DCE8F5] px-3 sm:w-[300px]">
 
             <Search
               size={17}
@@ -532,7 +1588,9 @@ export default function TeacherExamSchedulePage() {
 
             <input
               type="text"
-              value={search}
+              value={
+                search
+              }
               onChange={(
                 event
               ) =>
@@ -541,14 +1599,7 @@ export default function TeacherExamSchedulePage() {
                 )
               }
               placeholder="Search subject..."
-              className="
-                w-full
-                bg-transparent
-                px-3
-                py-2.5
-                text-sm
-                outline-none
-              "
+              className="w-full bg-transparent px-3 py-2.5 text-sm outline-none"
             />
 
           </div>
@@ -556,20 +1607,12 @@ export default function TeacherExamSchedulePage() {
         </div>
 
 
+        {/* =============================================== */}
         {/* LOADING */}
+        {/* =============================================== */}
 
         {loading && (
-          <div
-            className="
-              flex
-              items-center
-              justify-center
-              gap-3
-              py-16
-              text-sm
-              text-slate-500
-            "
-          >
+          <div className="flex items-center justify-center gap-3 py-16 text-sm text-slate-500">
 
             <Loader2
               size={20}
@@ -582,14 +1625,17 @@ export default function TeacherExamSchedulePage() {
         )}
 
 
-        {/* DESKTOP TABLE */}
+        {/* =============================================== */}
+        {/* DESKTOP */}
+        {/* =============================================== */}
 
         {!loading &&
           filteredSchedules.length >
             0 && (
+
           <div className="hidden overflow-x-auto md:block">
 
-            <table className="w-full min-w-[900px]">
+            <table className="w-full min-w-[1100px]">
 
               <thead className="bg-[#F8FBFF]">
 
@@ -619,6 +1665,14 @@ export default function TeacherExamSchedulePage() {
                     Room
                   </TableHead>
 
+                  <TableHead>
+                    Instructions
+                  </TableHead>
+
+                  <TableHead align="right">
+                    Actions
+                  </TableHead>
+
                 </tr>
 
               </thead>
@@ -628,12 +1682,16 @@ export default function TeacherExamSchedulePage() {
 
                 {filteredSchedules.map(
                   (item) => (
+
                     <tr
-                      key={item.id}
+                      key={
+                        item.id
+                      }
                       className="transition hover:bg-[#F8FBFF]"
                     >
 
                       <TableData>
+
                         <div className="flex items-center gap-2">
 
                           <CalendarDays
@@ -646,6 +1704,7 @@ export default function TeacherExamSchedulePage() {
                           )}
 
                         </div>
+
                       </TableData>
 
 
@@ -654,15 +1713,11 @@ export default function TeacherExamSchedulePage() {
                         <div>
 
                           <p className="font-semibold text-[#0B3A67]">
-                            {
-                              item.subject
-                            }
+                            {item.subject}
                           </p>
 
                           <p className="mt-1 text-xs text-slate-400">
-                            {
-                              item.exam_name
-                            }
+                            {item.exam_name}
                           </p>
 
                         </div>
@@ -672,7 +1727,9 @@ export default function TeacherExamSchedulePage() {
 
                       <TableData>
                         {
-                          item.name
+                          item.name ||
+                          item.class_name ||
+                          "--"
                         }
                       </TableData>
 
@@ -698,7 +1755,114 @@ export default function TeacherExamSchedulePage() {
                         }
                       </TableData>
 
+
+                      <TableData>
+
+                        <p className="max-w-[220px] truncate">
+                          {
+                            item.instructions ||
+                            "--"
+                          }
+                        </p>
+
+                      </TableData>
+
+
+                      <TableData align="right">
+
+                        <div className="flex justify-end gap-2">
+
+                          {/* EDIT */}
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openEditModal(
+                                item
+                              )
+                            }
+                            title="Edit schedule"
+                            className="
+                              flex
+                              h-9
+                              w-9
+                              items-center
+                              justify-center
+                              rounded-lg
+                              border
+                              border-slate-200
+                              text-slate-500
+                              transition
+                              hover:border-blue-200
+                              hover:bg-blue-50
+                              hover:text-[#0075FF]
+                            "
+                          >
+
+                            <Pencil
+                              size={16}
+                            />
+
+                          </button>
+
+
+                          {/* DELETE */}
+
+                          <button
+                            type="button"
+                            disabled={
+                              deletingId ===
+                              item.id
+                            }
+                            onClick={() =>
+                              handleDelete(
+                                item
+                              )
+                            }
+                            title="Delete schedule"
+                            className="
+                              flex
+                              h-9
+                              w-9
+                              items-center
+                              justify-center
+                              rounded-lg
+                              border
+                              border-slate-200
+                              text-slate-500
+                              transition
+                              hover:border-red-200
+                              hover:bg-red-50
+                              hover:text-red-600
+                              disabled:cursor-not-allowed
+                              disabled:opacity-50
+                            "
+                          >
+
+                            {deletingId ===
+                            item.id ? (
+
+                              <Loader2
+                                size={16}
+                                className="animate-spin"
+                              />
+
+                            ) : (
+
+                              <Trash2
+                                size={16}
+                              />
+
+                            )}
+
+                          </button>
+
+                        </div>
+
+                      </TableData>
+
                     </tr>
+
                   )
                 )}
 
@@ -707,34 +1871,62 @@ export default function TeacherExamSchedulePage() {
             </table>
 
           </div>
+
         )}
 
 
+        {/* =============================================== */}
         {/* MOBILE */}
+        {/* =============================================== */}
 
         {!loading &&
           filteredSchedules.length >
             0 && (
+
           <div className="divide-y divide-slate-100 md:hidden">
 
             {filteredSchedules.map(
               (item) => (
+
                 <ExamCard
-                  key={item.id}
-                  item={item}
+                  key={
+                    item.id
+                  }
+                  item={
+                    item
+                  }
+                  deleting={
+                    deletingId ===
+                    item.id
+                  }
+                  onEdit={() =>
+                    openEditModal(
+                      item
+                    )
+                  }
+                  onDelete={() =>
+                    handleDelete(
+                      item
+                    )
+                  }
                 />
+
               )
             )}
 
           </div>
+
         )}
 
 
+        {/* =============================================== */}
         {/* EMPTY */}
+        {/* =============================================== */}
 
         {!loading &&
           filteredSchedules.length ===
             0 && (
+
           <div className="py-16 text-center">
 
             <GraduationCap
@@ -747,13 +1939,510 @@ export default function TeacherExamSchedulePage() {
             </h3>
 
             <p className="mt-1 text-sm text-slate-400">
-              No examination schedule is available for this selection.
+              No examination schedule is
+              available for this selection.
             </p>
 
+
+            <button
+              type="button"
+              onClick={
+                openAddModal
+              }
+              disabled={
+                !selectedClassId
+              }
+              className="
+                mt-5
+                inline-flex
+                items-center
+                gap-2
+                rounded-xl
+                bg-[#0075FF]
+                px-4
+                py-2.5
+                text-sm
+                font-semibold
+                text-white
+                disabled:opacity-50
+              "
+            >
+
+              <Plus
+                size={17}
+              />
+
+              Add Schedule
+
+            </button>
+
           </div>
+
         )}
 
       </section>
+
+
+      {/* ================================================= */}
+      {/* MODAL */}
+      {/* ================================================= */}
+
+      {modalOpen && (
+
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4">
+
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+
+            {/* =========================================== */}
+            {/* HEADER */}
+            {/* =========================================== */}
+
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 md:px-6">
+
+              <div>
+
+                <h2 className="text-lg font-bold text-[#0B3A67]">
+
+                  {editingSchedule
+                    ? "Edit Exam Schedule"
+                    : "Add Exam Schedule"}
+
+                </h2>
+
+                <p className="mt-1 text-xs text-slate-500">
+
+                  {editingSchedule
+                    ? "Update date, time, room or instructions."
+                    : "Schedule your assigned subject examination."}
+
+                </p>
+
+              </div>
+
+
+              <button
+                type="button"
+                disabled={
+                  saving
+                }
+                onClick={
+                  closeModal
+                }
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50"
+              >
+
+                <X
+                  size={18}
+                />
+
+              </button>
+
+            </div>
+
+
+            {/* =========================================== */}
+            {/* FORM */}
+            {/* =========================================== */}
+
+            <form
+              onSubmit={
+                handleSubmit
+              }
+              className="p-5 md:p-6"
+            >
+
+              {error && (
+                <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
+
+
+              <div className="grid gap-5 md:grid-cols-2">
+
+                {/* CLASS */}
+
+                <FormField
+                  label="Class"
+                  required
+                >
+
+                  <select
+                    name="class_id"
+                    value={
+                      form.class_id
+                    }
+                    disabled={
+                      Boolean(
+                        editingSchedule
+                      )
+                    }
+                    onChange={
+                      handleModalClassChange
+                    }
+                    className={
+                      inputClass
+                    }
+                  >
+
+                    <option value="">
+                      Select Class
+                    </option>
+
+                    {uniqueClasses.map(
+                      (item) => (
+
+                        <option
+                          key={
+                            item.id
+                          }
+                          value={
+                            item.id
+                          }
+                        >
+                          {
+                            item.display_name ||
+                            item.class_name ||
+                            item.name
+                          }
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+                </FormField>
+
+
+                {/* EXAM */}
+
+                <FormField
+                  label="Examination"
+                  required
+                >
+
+                  <select
+                    name="exam_id"
+                    value={
+                      form.exam_id
+                    }
+                    disabled={
+                      Boolean(
+                        editingSchedule
+                      )
+                    }
+                    onChange={
+                      handleFormChange
+                    }
+                    className={
+                      inputClass
+                    }
+                  >
+
+                    <option value="">
+                      Select Examination
+                    </option>
+
+                    {exams.map(
+                      (exam) => (
+
+                        <option
+                          key={
+                            exam.id
+                          }
+                          value={
+                            exam.id
+                          }
+                        >
+                          {exam.name}
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+                </FormField>
+
+
+                {/* SUBJECT */}
+
+                <div className="md:col-span-2">
+
+                  <FormField
+                    label="Subject"
+                    required
+                  >
+
+                    <select
+                      name="subject"
+                      value={
+                        form.subject
+                      }
+                      disabled={
+                        Boolean(
+                          editingSchedule
+                        )
+                      }
+                      onChange={
+                        handleFormChange
+                      }
+                      className={
+                        inputClass
+                      }
+                    >
+
+                      <option value="">
+                        Select Subject
+                      </option>
+
+                      {modalSubjects.map(
+                        (subject) => (
+
+                          <option
+                            key={
+                              subject
+                            }
+                            value={
+                              subject
+                            }
+                          >
+                            {subject}
+                          </option>
+
+                        )
+                      )}
+
+                    </select>
+
+                  </FormField>
+
+
+                  {!editingSchedule &&
+                    form.class_id &&
+                    modalSubjects.length ===
+                      0 && (
+
+                    <p className="mt-2 text-xs text-amber-600">
+                      No subject assignment
+                      found for this class.
+                    </p>
+
+                  )}
+
+                </div>
+
+
+                {/* DATE */}
+
+                <FormField
+                  label="Exam Date"
+                  required
+                >
+
+                  <input
+                    type="date"
+                    name="exam_date"
+                    value={
+                      form.exam_date
+                    }
+                    onChange={
+                      handleFormChange
+                    }
+                    className={
+                      inputClass
+                    }
+                  />
+
+                </FormField>
+
+
+                {/* ROOM */}
+
+                <FormField
+                  label="Room"
+                >
+
+                  <input
+                    type="text"
+                    name="room"
+                    value={
+                      form.room
+                    }
+                    onChange={
+                      handleFormChange
+                    }
+                    placeholder="VI-B / Hall 1"
+                    className={
+                      inputClass
+                    }
+                  />
+
+                </FormField>
+
+
+                {/* START */}
+
+                <FormField
+                  label="Start Time"
+                  required
+                >
+
+                  <input
+                    type="time"
+                    name="start_time"
+                    value={
+                      form.start_time
+                    }
+                    onChange={
+                      handleFormChange
+                    }
+                    className={
+                      inputClass
+                    }
+                  />
+
+                </FormField>
+
+
+                {/* END */}
+
+                <FormField
+                  label="End Time"
+                  required
+                >
+
+                  <input
+                    type="time"
+                    name="end_time"
+                    value={
+                      form.end_time
+                    }
+                    min={
+                      form.start_time ||
+                      undefined
+                    }
+                    onChange={
+                      handleFormChange
+                    }
+                    className={
+                      inputClass
+                    }
+                  />
+
+                </FormField>
+
+
+                {/* INSTRUCTIONS */}
+
+                <div className="md:col-span-2">
+
+                  <FormField
+                    label="Instructions"
+                  >
+
+                    <textarea
+                      name="instructions"
+                      value={
+                        form.instructions
+                      }
+                      onChange={
+                        handleFormChange
+                      }
+                      rows={4}
+                      placeholder="Enter examination instructions..."
+                      className="
+                        w-full
+                        resize-none
+                        rounded-xl
+                        border
+                        border-[#DCE8F5]
+                        px-4
+                        py-3
+                        text-sm
+                        text-[#0B3A67]
+                        outline-none
+                        transition
+                        focus:border-[#0075FF]
+                        focus:ring-2
+                        focus:ring-blue-100
+                      "
+                    />
+
+                  </FormField>
+
+                </div>
+
+              </div>
+
+
+              {/* ========================================= */}
+              {/* BUTTONS */}
+              {/* ========================================= */}
+
+              <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+
+                <button
+                  type="button"
+                  disabled={
+                    saving
+                  }
+                  onClick={
+                    closeModal
+                  }
+                  className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+
+                <button
+                  type="submit"
+                  disabled={
+                    saving
+                  }
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0075FF] px-5 text-sm font-semibold text-white hover:bg-[#0066dd] disabled:opacity-50"
+                >
+
+                  {saving ? (
+                    <>
+                      <Loader2
+                        size={17}
+                        className="animate-spin"
+                      />
+
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      {editingSchedule ? (
+                        <Pencil
+                          size={17}
+                        />
+                      ) : (
+                        <Plus
+                          size={17}
+                        />
+                      )}
+
+                      {editingSchedule
+                        ? "Update Schedule"
+                        : "Save Schedule"}
+                    </>
+                  )}
+
+                </button>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+
+      )}
 
     </div>
   );
@@ -766,28 +2455,21 @@ export default function TeacherExamSchedulePage() {
 
 function ExamCard({
   item,
+  deleting,
+  onEdit,
+  onDelete,
 }) {
   return (
     <div className="p-4">
 
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
 
-        <div
-          className="
-            flex
-            h-12
-            w-12
-            shrink-0
-            items-center
-            justify-center
-            rounded-xl
-            bg-[#EAF4FF]
-            text-[#0075FF]
-          "
-        >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EAF4FF] text-[#0075FF]">
+
           <CalendarDays
             size={21}
           />
+
         </div>
 
 
@@ -802,25 +2484,72 @@ function ExamCard({
           </h3>
 
           <p className="mt-1 text-xs text-slate-400">
-            {item.name}
+            {
+              item.name ||
+              item.class_name ||
+              "--"
+            }
           </p>
+
+        </div>
+
+
+        <div className="flex gap-1">
+
+          <button
+            type="button"
+            onClick={
+              onEdit
+            }
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-[#0075FF]"
+          >
+
+            <Pencil
+              size={15}
+            />
+
+          </button>
+
+
+          <button
+            type="button"
+            disabled={
+              deleting
+            }
+            onClick={
+              onDelete
+            }
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600 disabled:opacity-50"
+          >
+
+            {deleting ? (
+
+              <Loader2
+                size={15}
+                className="animate-spin"
+              />
+
+            ) : (
+
+              <Trash2
+                size={15}
+              />
+
+            )}
+
+          </button>
 
         </div>
 
       </div>
 
 
-      <div
-        className="
-          mt-4
-          grid
-          grid-cols-2
-          gap-2
-        "
-      >
+      <div className="mt-4 grid grid-cols-2 gap-2">
 
         <InfoBox
-          icon={CalendarDays}
+          icon={
+            CalendarDays
+          }
           label="Date"
           value={formatDate(
             item.exam_date
@@ -828,7 +2557,9 @@ function ExamCard({
         />
 
         <InfoBox
-          icon={Clock3}
+          icon={
+            Clock3
+          }
           label="Time"
           value={`${formatTime(
             item.start_time
@@ -841,27 +2572,27 @@ function ExamCard({
 
 
       {item.room && (
+
         <div className="mt-3">
 
           <InfoBox
-            icon={MapPin}
+            icon={
+              MapPin
+            }
             label="Room"
-            value={item.room}
+            value={
+              item.room
+            }
           />
 
         </div>
+
       )}
 
 
       {item.instructions && (
-        <div
-          className="
-            mt-3
-            rounded-xl
-            bg-[#F8FBFF]
-            p-3
-          "
-        >
+
+        <div className="mt-3 rounded-xl bg-[#F8FBFF] p-3">
 
           <p className="text-[10px] font-semibold uppercase text-slate-400">
             Instructions
@@ -874,6 +2605,7 @@ function ExamCard({
           </p>
 
         </div>
+
       )}
 
     </div>
@@ -891,13 +2623,7 @@ function InfoBox({
   value,
 }) {
   return (
-    <div
-      className="
-        rounded-xl
-        bg-[#F8FBFF]
-        p-3
-      "
-    >
+    <div className="rounded-xl bg-[#F8FBFF] p-3">
 
       <div className="flex items-center gap-1.5">
 
@@ -922,7 +2648,7 @@ function InfoBox({
 
 
 // =========================================================
-// SELECT
+// SELECT FIELD
 // =========================================================
 
 function SelectField({
@@ -941,8 +2667,12 @@ function SelectField({
       <div className="relative">
 
         <select
-          value={value}
-          onChange={onChange}
+          value={
+            value
+          }
+          onChange={
+            onChange
+          }
           className="
             w-full
             appearance-none
@@ -960,19 +2690,14 @@ function SelectField({
             focus:border-[#0075FF]
           "
         >
+
           {children}
+
         </select>
 
         <ChevronDown
           size={17}
-          className="
-            pointer-events-none
-            absolute
-            right-3
-            top-1/2
-            -translate-y-1/2
-            text-[#0075FF]
-          "
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#0075FF]"
         />
 
       </div>
@@ -983,24 +2708,61 @@ function SelectField({
 
 
 // =========================================================
-// TABLE
+// FORM FIELD
+// =========================================================
+
+function FormField({
+  label,
+  required = false,
+  children,
+}) {
+  return (
+    <div>
+
+      <label className="mb-2 block text-sm font-semibold text-[#0B3A67]">
+
+        {label}
+
+        {required && (
+          <span className="ml-1 text-red-500">
+            *
+          </span>
+        )}
+
+      </label>
+
+      {children}
+
+    </div>
+  );
+}
+
+
+// =========================================================
+// TABLE HEAD
 // =========================================================
 
 function TableHead({
   children,
+  align = "left",
 }) {
   return (
     <th
-      className="
+      className={`
         px-5
         py-4
-        text-left
         text-xs
         font-semibold
         uppercase
         tracking-wide
         text-slate-500
-      "
+        ${
+          align ===
+          "right"
+            ? "text-right"
+            : "text-left"
+        }
+      `}
     >
       {children}
     </th>
@@ -1008,17 +2770,28 @@ function TableHead({
 }
 
 
+// =========================================================
+// TABLE DATA
+// =========================================================
+
 function TableData({
   children,
+  align = "left",
 }) {
   return (
     <td
-      className="
+      className={`
         px-5
         py-4
         text-sm
         text-slate-600
-      "
+        ${
+          align ===
+          "right"
+            ? "text-right"
+            : "text-left"
+        }
+      `}
     >
       {children}
     </td>

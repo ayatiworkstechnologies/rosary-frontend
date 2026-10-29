@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   CalendarDays,
+  Eye,
+  EyeOff,
   Pencil,
   Plus,
   Search,
@@ -16,6 +22,7 @@ import {
   deleteAdminExam,
   getAdminExams,
   updateAdminExam,
+  updateAdminExamResultsPublishStatus,
   updateAdminExamStatus,
 } from "@/lib/admin-exams";
 
@@ -33,6 +40,8 @@ const EMPTY_FORM = {
   end_date: "",
   is_active: true,
 };
+
+const DEFAULT_PAGE_SIZE = 20;
 
 
 // ======================================================
@@ -54,6 +63,11 @@ export default function AdminExamsPage() {
     saving,
     setSaving,
   ] = useState(false);
+
+  const [
+    actionLoadingId,
+    setActionLoadingId,
+  ] = useState(null);
 
   const [
     error,
@@ -97,13 +111,50 @@ export default function AdminExamsPage() {
     ...EMPTY_FORM,
   });
 
+  const [
+    page,
+    setPage,
+  ] = useState(1);
+
+  const [
+    pageSize,
+    setPageSize,
+  ] = useState(
+    DEFAULT_PAGE_SIZE
+  );
+
+  const [
+    total,
+    setTotal,
+  ] = useState(0);
+
+  const [
+    totalPages,
+    setTotalPages,
+  ] = useState(0);
+
+  const [
+    hasNext,
+    setHasNext,
+  ] = useState(false);
+
+  const [
+    hasPrevious,
+    setHasPrevious,
+  ] = useState(false);
+
 
   // ======================================================
   // BUILD FILTERS
   // ======================================================
 
-  const buildFilters = () => {
-    const filters = {};
+  const buildFilters = (
+    selectedPage = page
+  ) => {
+    const filters = {
+      page: selectedPage,
+      page_size: pageSize,
+    };
 
     if (search.trim()) {
       filters.search =
@@ -119,7 +170,8 @@ export default function AdminExamsPage() {
       statusFilter !== ""
     ) {
       filters.is_active =
-        statusFilter === "active";
+        statusFilter ===
+        "active";
     }
 
     return filters;
@@ -127,66 +179,121 @@ export default function AdminExamsPage() {
 
 
   // ======================================================
+  // NORMALIZE RESPONSE
+  // ======================================================
+
+  const applyExamResponse = (
+    data
+  ) => {
+    if (
+      Array.isArray(data)
+    ) {
+      setExams(data);
+
+      setTotal(
+        data.length
+      );
+
+      setTotalPages(
+        data.length > 0
+          ? 1
+          : 0
+      );
+
+      setHasNext(false);
+      setHasPrevious(false);
+
+      return;
+    }
+
+    const rows =
+      Array.isArray(
+        data?.data
+      )
+        ? data.data
+        : Array.isArray(
+            data?.items
+          )
+        ? data.items
+        : Array.isArray(
+            data?.exams
+          )
+        ? data.exams
+        : [];
+
+    setExams(rows);
+
+    setTotal(
+      Number(
+        data?.total ?? rows.length
+      )
+    );
+
+    setTotalPages(
+      Number(
+        data?.total_pages ?? 0
+      )
+    );
+
+    setHasNext(
+      Boolean(
+        data?.has_next
+      )
+    );
+
+    setHasPrevious(
+      Boolean(
+        data?.has_previous
+      )
+    );
+  };
+
+
+  // ======================================================
   // LOAD EXAMS
   // ======================================================
 
-  const loadExams = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const loadExams =
+    async (
+      selectedPage = page
+    ) => {
+      try {
+        setLoading(true);
+        setError("");
 
-      const filters =
-        buildFilters();
+        const filters =
+          buildFilters(
+            selectedPage
+          );
 
-      const data =
-        await getAdminExams(
-          filters
+        const data =
+          await getAdminExams(
+            filters
+          );
+
+        applyExamResponse(
+          data
+        );
+      } catch (err) {
+        console.error(
+          "Exam loading error:",
+          err
         );
 
-      console.log(
-        "Admin Exams API:",
-        data
-      );
+        setError(
+          err?.message ||
+            "Unable to load exams."
+        );
 
-      if (
-        Array.isArray(data)
-      ) {
-        setExams(data);
-      } else if (
-        Array.isArray(
-          data?.items
-        )
-      ) {
-        setExams(
-          data.items
-        );
-      } else if (
-        Array.isArray(
-          data?.exams
-        )
-      ) {
-        setExams(
-          data.exams
-        );
-      } else {
         setExams([]);
+        setTotal(0);
+        setTotalPages(0);
+        setHasNext(false);
+        setHasPrevious(false);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error(
-        "Exam loading error:",
-        err
-      );
-
-      setError(
-        err?.message ||
-          "Unable to load exams."
-      );
-
-      setExams([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
 
   // ======================================================
@@ -203,7 +310,11 @@ export default function AdminExamsPage() {
             setLoading(true);
             setError("");
 
-            const filters = {};
+            const filters = {
+              page,
+              page_size:
+                pageSize,
+            };
 
             if (
               search.trim()
@@ -233,35 +344,15 @@ export default function AdminExamsPage() {
                 filters
               );
 
-            if (cancelled) {
+            if (
+              cancelled
+            ) {
               return;
             }
 
-            if (
-              Array.isArray(
-                data
-              )
-            ) {
-              setExams(data);
-            } else if (
-              Array.isArray(
-                data?.items
-              )
-            ) {
-              setExams(
-                data.items
-              );
-            } else if (
-              Array.isArray(
-                data?.exams
-              )
-            ) {
-              setExams(
-                data.exams
-              );
-            } else {
-              setExams([]);
-            }
+            applyExamResponse(
+              data
+            );
           } catch (err) {
             console.error(
               "Exam loading error:",
@@ -277,14 +368,16 @@ export default function AdminExamsPage() {
               );
 
               setExams([]);
+              setTotal(0);
+              setTotalPages(0);
+              setHasNext(false);
+              setHasPrevious(false);
             }
           } finally {
             if (
               !cancelled
             ) {
-              setLoading(
-                false
-              );
+              setLoading(false);
             }
           }
         },
@@ -302,7 +395,56 @@ export default function AdminExamsPage() {
     search,
     yearFilter,
     statusFilter,
+    page,
+    pageSize,
   ]);
+
+
+  // ======================================================
+  // RESET PAGE ON FILTER CHANGE
+  // ======================================================
+
+  const handleSearchChange = (
+    event
+  ) => {
+    setSearch(
+      event.target.value
+    );
+
+    setPage(1);
+  };
+
+  const handleYearChange = (
+    event
+  ) => {
+    setYearFilter(
+      event.target.value
+    );
+
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (
+    event
+  ) => {
+    setStatusFilter(
+      event.target.value
+    );
+
+    setPage(1);
+  };
+
+  const handlePageSizeChange = (
+    event
+  ) => {
+    setPageSize(
+      Number(
+        event.target.value
+      )
+    );
+
+    setPage(1);
+  };
 
 
   // ======================================================
@@ -338,7 +480,7 @@ export default function AdminExamsPage() {
 
 
   // ======================================================
-  // HANDLE INPUT CHANGE
+  // INPUT CHANGE
   // ======================================================
 
   const handleChange = (
@@ -537,7 +679,9 @@ export default function AdminExamsPage() {
           ...EMPTY_FORM,
         });
 
-        await loadExams();
+        setPage(1);
+
+        await loadExams(1);
       } catch (err) {
         console.error(
           "Exam save error:",
@@ -555,27 +699,47 @@ export default function AdminExamsPage() {
 
 
   // ======================================================
-  // STATUS CHANGE
+  // ACTIVE / INACTIVE
   // ======================================================
 
   const handleStatusChange =
     async (exam) => {
+      const nextStatus =
+        !exam.is_active;
+
+      const confirmed =
+        window.confirm(
+          nextStatus
+            ? `Activate "${exam.name}"?`
+            : `Deactivate "${exam.name}"?`
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
       try {
+        setActionLoadingId(
+          `status-${exam.id}`
+        );
+
         setError("");
         setSuccess("");
 
         await updateAdminExamStatus(
           exam.id,
-          !exam.is_active
+          nextStatus
         );
 
         setSuccess(
-          exam.is_active
-            ? "Exam deactivated successfully."
-            : "Exam activated successfully."
+          nextStatus
+            ? "Exam activated successfully."
+            : "Exam deactivated successfully."
         );
 
-        await loadExams();
+        await loadExams(
+          page
+        );
       } catch (err) {
         console.error(
           "Exam status error:",
@@ -585,6 +749,87 @@ export default function AdminExamsPage() {
         setError(
           err?.message ||
             "Unable to update exam status."
+        );
+      } finally {
+        setActionLoadingId(
+          null
+        );
+      }
+    };
+
+
+  // ======================================================
+  // PUBLISH / UNPUBLISH RESULTS
+  // ======================================================
+
+  const handlePublishChange =
+    async (exam) => {
+      const nextPublished =
+        !Boolean(
+          exam.results_published
+        );
+
+      if (
+        nextPublished &&
+        !exam.is_active
+      ) {
+        setError(
+          "Inactive exam results cannot be published."
+        );
+
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          nextPublished
+            ? `Publish results for "${exam.name}"?\n\nParents will be able to view the results after publishing.`
+            : `Unpublish results for "${exam.name}"?\n\nParents will no longer be able to view this exam result.`
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        setActionLoadingId(
+          `publish-${exam.id}`
+        );
+
+        setError("");
+        setSuccess("");
+
+        await updateAdminExamResultsPublishStatus(
+          exam.id,
+          nextPublished
+        );
+
+        setSuccess(
+          nextPublished
+            ? `"${exam.name}" results published successfully.`
+            : `"${exam.name}" results unpublished successfully.`
+        );
+
+        await loadExams(
+          page
+        );
+      } catch (err) {
+        console.error(
+          "Exam publish error:",
+          err
+        );
+
+        setError(
+          err?.message ||
+            (
+              nextPublished
+                ? "Unable to publish exam results."
+                : "Unable to unpublish exam results."
+            )
+        );
+      } finally {
+        setActionLoadingId(
+          null
         );
       }
     };
@@ -606,6 +851,10 @@ export default function AdminExamsPage() {
       }
 
       try {
+        setActionLoadingId(
+          `delete-${exam.id}`
+        );
+
         setError("");
         setSuccess("");
 
@@ -617,7 +866,18 @@ export default function AdminExamsPage() {
           "Exam deleted successfully."
         );
 
-        await loadExams();
+        if (
+          exams.length === 1 &&
+          page > 1
+        ) {
+          setPage(
+            page - 1
+          );
+        } else {
+          await loadExams(
+            page
+          );
+        }
       } catch (err) {
         console.error(
           "Exam delete error:",
@@ -627,6 +887,10 @@ export default function AdminExamsPage() {
         setError(
           err?.message ||
             "Unable to delete exam."
+        );
+      } finally {
+        setActionLoadingId(
+          null
         );
       }
     };
@@ -657,87 +921,89 @@ export default function AdminExamsPage() {
 
 
   // ======================================================
+  // PAGE RANGE
+  // ======================================================
+
+  const pageStart =
+    total === 0
+      ? 0
+      : (
+          (page - 1) *
+            pageSize
+        ) + 1;
+
+  const pageEnd =
+    Math.min(
+      page * pageSize,
+      total
+    );
+
+
+  // ======================================================
   // RENDER
   // ======================================================
 
   return (
     <AdminShell>
-
       <div className="mx-auto max-w-[1500px]">
 
-
-        {/* ============================================= */}
         {/* HEADER */}
-        {/* ============================================= */}
 
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
           <div>
-
             <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
               Exams
             </h1>
 
             <p className="mt-1 text-sm text-gray-500">
-              Create and manage school
-              examinations, academic years
-              and examination periods.
+              Create examinations,
+              manage exam status and
+              control when results are
+              visible to parents.
             </p>
-
           </div>
-
 
           <button
             type="button"
-            onClick={openAddModal}
+            onClick={
+              openAddModal
+            }
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0075FF] px-5 text-sm font-semibold text-white transition hover:bg-[#0066de]"
           >
-
-            <Plus size={18} />
+            <Plus
+              size={18}
+            />
 
             Add Exam
-
           </button>
-
         </div>
 
 
-        {/* ============================================= */}
         {/* SUCCESS */}
-        {/* ============================================= */}
 
         {success && (
           <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-
             {success}
-
           </div>
         )}
 
 
-        {/* ============================================= */}
         {/* ERROR */}
-        {/* ============================================= */}
 
         {error &&
           !modalOpen && (
             <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-
               {error}
-
             </div>
           )}
 
 
-        {/* ============================================= */}
         {/* FILTERS */}
-        {/* EXACT SAME STYLE AS DOWNLOADS */}
-        {/* ============================================= */}
 
         <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
 
           <div className="grid gap-3 lg:grid-cols-[2fr_1fr_1fr]">
-
 
             {/* SEARCH */}
 
@@ -751,10 +1017,8 @@ export default function AdminExamsPage() {
               <input
                 type="text"
                 value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value
-                  )
+                onChange={
+                  handleSearchChange
                 }
                 placeholder="Search exams..."
                 className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-[#0075FF]"
@@ -766,47 +1030,42 @@ export default function AdminExamsPage() {
             {/* YEAR */}
 
             <select
-              value={yearFilter}
-              onChange={(event) =>
-                setYearFilter(
-                  event.target.value
-                )
+              value={
+                yearFilter
+              }
+              onChange={
+                handleYearChange
               }
               className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#0075FF]"
             >
-
               <option value="">
                 All Academic Years
               </option>
 
               {academicYears.map(
                 (year) => (
-
                   <option
                     key={year}
                     value={year}
                   >
                     {year}
                   </option>
-
                 )
               )}
-
             </select>
 
 
             {/* STATUS */}
 
             <select
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(
-                  event.target.value
-                )
+              value={
+                statusFilter
+              }
+              onChange={
+                handleStatusFilterChange
               }
               className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#0075FF]"
             >
-
               <option value="">
                 All Status
               </option>
@@ -818,18 +1077,13 @@ export default function AdminExamsPage() {
               <option value="inactive">
                 Inactive
               </option>
-
             </select>
 
           </div>
-
         </div>
 
 
-        {/* ============================================= */}
         {/* TABLE */}
-        {/* EXACT SAME STYLE AS DOWNLOADS */}
-        {/* ============================================= */}
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
@@ -857,17 +1111,14 @@ export default function AdminExamsPage() {
 
               </div>
 
-
               <h3 className="text-base font-bold text-slate-900">
                 No exams found
               </h3>
-
 
               <p className="mt-1 text-sm text-slate-500">
                 No exams match your
                 current filters.
               </p>
-
 
               <button
                 type="button"
@@ -876,244 +1127,418 @@ export default function AdminExamsPage() {
                 }
                 className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#0075FF] px-4 py-2.5 text-sm font-semibold text-white"
               >
-
-                <Plus size={17} />
+                <Plus
+                  size={17}
+                />
 
                 Add Exam
-
               </button>
 
             </div>
 
           ) : (
 
-            <div className="overflow-x-auto">
+            <>
+              <div className="overflow-x-auto">
 
-              <table className="w-full min-w-[950px]">
+                <table className="w-full min-w-[1200px]">
 
+                  <thead>
 
-                {/* ===================================== */}
-                {/* TABLE HEADER */}
-                {/* ===================================== */}
+                    <tr className="border-b border-slate-200 bg-slate-50">
 
-                <thead>
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        Exam
+                      </th>
 
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        Academic Year
+                      </th>
 
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        Start Date
+                      </th>
 
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      Exam
-                    </th>
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        End Date
+                      </th>
 
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        Status
+                      </th>
 
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      Academic Year
-                    </th>
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                        Results
+                      </th>
 
+                      <th className="px-5 py-4 text-right text-xs font-bold uppercase text-slate-500">
+                        Actions
+                      </th>
 
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      Start Date
-                    </th>
+                    </tr>
 
-
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      End Date
-                    </th>
-
-
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                      Status
-                    </th>
-
-
-                    <th className="px-5 py-4 text-right text-xs font-bold uppercase text-slate-500">
-                      Actions
-                    </th>
-
-                  </tr>
-
-                </thead>
+                  </thead>
 
 
-                {/* ===================================== */}
-                {/* TABLE BODY */}
-                {/* ===================================== */}
+                  <tbody>
 
-                <tbody>
+                    {exams.map(
+                      (exam) => {
 
-                  {exams.map(
-                    (exam) => (
+                        const statusBusy =
+                          actionLoadingId ===
+                          `status-${exam.id}`;
 
-                      <tr
-                        key={
-                          exam.id
-                        }
-                        className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
-                      >
+                        const publishBusy =
+                          actionLoadingId ===
+                          `publish-${exam.id}`;
 
+                        const deleteBusy =
+                          actionLoadingId ===
+                          `delete-${exam.id}`;
 
-                        {/* EXAM */}
-
-                        <td className="px-5 py-4">
-
-                          <div className="flex items-center gap-3">
-
-
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0075FF]">
-
-                              <CalendarDays
-                                size={19}
-                              />
-
-                            </div>
-
-
-                            <div className="min-w-0">
-
-                              <p className="max-w-[280px] truncate text-sm font-semibold text-slate-900">
-
-                                {exam.name}
-
-                              </p>
-
-
-                              <p className="mt-1 text-xs text-slate-500">
-
-                                Exam ID: {exam.id}
-
-                              </p>
-
-                            </div>
-
-                          </div>
-
-                        </td>
-
-
-                        {/* YEAR */}
-
-                        <td className="px-5 py-4">
-
-                          <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700">
-
-                            {
-                              exam.academic_year
+                        return (
+                          <tr
+                            key={
+                              exam.id
                             }
-
-                          </span>
-
-                        </td>
-
-
-                        {/* START DATE */}
-
-                        <td className="px-5 py-4 text-sm text-slate-600">
-
-                          {formatDate(
-                            exam.start_date
-                          )}
-
-                        </td>
-
-
-                        {/* END DATE */}
-
-                        <td className="px-5 py-4 text-sm text-slate-600">
-
-                          {formatDate(
-                            exam.end_date
-                          )}
-
-                        </td>
-
-
-                        {/* STATUS */}
-
-                        <td className="px-5 py-4">
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleStatusChange(
-                                exam
-                              )
-                            }
-                            className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                              exam.is_active
-                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                            }`}
+                            className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
                           >
 
-                            {exam.is_active
-                              ? "Active"
-                              : "Inactive"}
+                            {/* EXAM */}
 
-                          </button>
+                            <td className="px-5 py-4">
 
-                        </td>
+                              <div className="flex items-center gap-3">
 
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0075FF]">
 
-                        {/* ACTIONS */}
+                                  <CalendarDays
+                                    size={19}
+                                  />
 
-                        <td className="px-5 py-4">
+                                </div>
 
-                          <div className="flex justify-end gap-2">
+                                <div className="min-w-0">
 
+                                  <p className="max-w-[280px] truncate text-sm font-semibold text-slate-900">
+                                    {exam.name}
+                                  </p>
 
-                            {/* EDIT */}
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    Exam ID: {exam.id}
+                                  </p>
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openEditModal(
-                                  exam
-                                )
-                              }
-                              title="Edit"
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#0075FF]"
-                            >
+                                </div>
 
-                              <Pencil
-                                size={16}
-                              />
+                              </div>
 
-                            </button>
+                            </td>
 
 
-                            {/* DELETE */}
+                            {/* YEAR */}
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleDelete(
-                                  exam
-                                )
-                              }
-                              title="Delete"
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                            >
+                            <td className="px-5 py-4">
 
-                              <Trash2
-                                size={16}
-                              />
+                              <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700">
+                                {
+                                  exam.academic_year
+                                }
+                              </span>
 
-                            </button>
+                            </td>
 
-                          </div>
 
-                        </td>
+                            {/* START */}
 
-                      </tr>
+                            <td className="px-5 py-4 text-sm text-slate-600">
 
-                    )
-                  )}
+                              {formatDate(
+                                exam.start_date
+                              )}
 
-                </tbody>
+                            </td>
 
-              </table>
 
-            </div>
+                            {/* END */}
+
+                            <td className="px-5 py-4 text-sm text-slate-600">
+
+                              {formatDate(
+                                exam.end_date
+                              )}
+
+                            </td>
+
+
+                            {/* ACTIVE STATUS */}
+
+                            <td className="px-5 py-4">
+
+                              <button
+                                type="button"
+                                disabled={
+                                  statusBusy
+                                }
+                                onClick={() =>
+                                  handleStatusChange(
+                                    exam
+                                  )
+                                }
+                                className={`rounded-full px-3 py-1.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                  exam.is_active
+                                    ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                }`}
+                              >
+
+                                {statusBusy
+                                  ? "Updating..."
+                                  : exam.is_active
+                                  ? "Active"
+                                  : "Inactive"}
+
+                              </button>
+
+                            </td>
+
+
+                            {/* RESULTS */}
+
+                            <td className="px-5 py-4">
+
+                              <div className="flex min-w-[170px] flex-col items-start gap-2">
+
+                                <span
+                                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+                                    exam.results_published
+                                      ? "bg-blue-50 text-blue-700"
+                                      : "bg-amber-50 text-amber-700"
+                                  }`}
+                                >
+
+                                  {exam.results_published ? (
+                                    <Eye
+                                      size={14}
+                                    />
+                                  ) : (
+                                    <EyeOff
+                                      size={14}
+                                    />
+                                  )}
+
+                                  {exam.results_published
+                                    ? "Published"
+                                    : "Unpublished"}
+
+                                </span>
+
+                                <button
+                                  type="button"
+                                  disabled={
+                                    publishBusy ||
+                                    (
+                                      !exam.results_published &&
+                                      !exam.is_active
+                                    )
+                                  }
+                                  onClick={() =>
+                                    handlePublishChange(
+                                      exam
+                                    )
+                                  }
+                                  className={`text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                                    exam.results_published
+                                      ? "text-red-600 hover:text-red-700"
+                                      : "text-[#0075FF] hover:text-[#0066de]"
+                                  }`}
+                                >
+
+                                  {publishBusy
+                                    ? "Updating..."
+                                    : exam.results_published
+                                    ? "Unpublish Results"
+                                    : "Publish Results"}
+
+                                </button>
+
+                              </div>
+
+                            </td>
+
+
+                            {/* ACTIONS */}
+
+                            <td className="px-5 py-4">
+
+                              <div className="flex justify-end gap-2">
+
+                                {/* EDIT */}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openEditModal(
+                                      exam
+                                    )
+                                  }
+                                  title="Edit"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#0075FF]"
+                                >
+                                  <Pencil
+                                    size={16}
+                                  />
+                                </button>
+
+
+                                {/* DELETE */}
+
+                                <button
+                                  type="button"
+                                  disabled={
+                                    deleteBusy
+                                  }
+                                  onClick={() =>
+                                    handleDelete(
+                                      exam
+                                    )
+                                  }
+                                  title="Delete"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  {deleteBusy ? (
+                                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-red-500" />
+                                  ) : (
+                                    <Trash2
+                                      size={16}
+                                    />
+                                  )}
+                                </button>
+
+                              </div>
+
+                            </td>
+
+                          </tr>
+                        );
+                      }
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+
+              {/* PAGINATION */}
+
+              <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+
+                <div className="text-sm text-slate-500">
+
+                  Showing{" "}
+
+                  <span className="font-semibold text-slate-700">
+                    {pageStart}
+                  </span>
+
+                  {" - "}
+
+                  <span className="font-semibold text-slate-700">
+                    {pageEnd}
+                  </span>
+
+                  {" of "}
+
+                  <span className="font-semibold text-slate-700">
+                    {total}
+                  </span>
+
+                  {" exams"}
+
+                </div>
+
+
+                <div className="flex flex-wrap items-center gap-2">
+
+                  <select
+                    value={
+                      pageSize
+                    }
+                    onChange={
+                      handlePageSizeChange
+                    }
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#0075FF]"
+                  >
+                    <option value="10">
+                      10 / page
+                    </option>
+
+                    <option value="20">
+                      20 / page
+                    </option>
+
+                    <option value="50">
+                      50 / page
+                    </option>
+
+                    <option value="100">
+                      100 / page
+                    </option>
+                  </select>
+
+
+                  <button
+                    type="button"
+                    disabled={
+                      !hasPrevious ||
+                      loading
+                    }
+                    onClick={() =>
+                      setPage(
+                        (previous) =>
+                          Math.max(
+                            previous - 1,
+                            1
+                          )
+                      )
+                    }
+                    className="h-9 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+
+
+                  <span className="min-w-[90px] text-center text-sm font-semibold text-slate-700">
+                    Page {page}
+                    {totalPages > 0
+                      ? ` of ${totalPages}`
+                      : ""}
+                  </span>
+
+
+                  <button
+                    type="button"
+                    disabled={
+                      !hasNext ||
+                      loading
+                    }
+                    onClick={() =>
+                      setPage(
+                        (previous) =>
+                          previous + 1
+                      )
+                    }
+                    className="h-9 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+
+                </div>
+
+              </div>
+            </>
 
           )}
 
@@ -1122,10 +1547,7 @@ export default function AdminExamsPage() {
       </div>
 
 
-      {/* ================================================= */}
       {/* ADD / EDIT MODAL */}
-      {/* SAME STYLE AS DOWNLOADS */}
-      {/* ================================================= */}
 
       {modalOpen && (
 
@@ -1133,10 +1555,7 @@ export default function AdminExamsPage() {
 
           <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
 
-
-            {/* ========================================= */}
             {/* MODAL HEADER */}
-            {/* ========================================= */}
 
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 md:px-6">
 
@@ -1149,7 +1568,6 @@ export default function AdminExamsPage() {
                     : "Add New Exam"}
 
                 </h2>
-
 
                 <p className="mt-1 text-xs text-slate-500">
 
@@ -1169,17 +1587,15 @@ export default function AdminExamsPage() {
                 }
                 className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200"
               >
-
-                <X size={18} />
-
+                <X
+                  size={18}
+                />
               </button>
 
             </div>
 
 
-            {/* ========================================= */}
             {/* FORM */}
-            {/* ========================================= */}
 
             <form
               onSubmit={
@@ -1188,24 +1604,16 @@ export default function AdminExamsPage() {
               className="p-5 md:p-6"
             >
 
-
               {error && (
-
                 <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-
                   {error}
-
                 </div>
-
               )}
 
 
               <div className="grid gap-5 md:grid-cols-2">
 
-
-                {/* ===================================== */}
                 {/* EXAM NAME */}
-                {/* ===================================== */}
 
                 <div className="md:col-span-2">
 
@@ -1218,7 +1626,6 @@ export default function AdminExamsPage() {
                     </span>
 
                   </label>
-
 
                   <input
                     type="text"
@@ -1236,9 +1643,7 @@ export default function AdminExamsPage() {
                 </div>
 
 
-                {/* ===================================== */}
                 {/* ACADEMIC YEAR */}
-                {/* ===================================== */}
 
                 <div className="md:col-span-2">
 
@@ -1251,7 +1656,6 @@ export default function AdminExamsPage() {
                     </span>
 
                   </label>
-
 
                   <input
                     type="text"
@@ -1269,18 +1673,13 @@ export default function AdminExamsPage() {
                 </div>
 
 
-                {/* ===================================== */}
                 {/* START DATE */}
-                {/* ===================================== */}
 
                 <div>
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-
                     Start Date
-
                   </label>
-
 
                   <input
                     type="date"
@@ -1297,18 +1696,13 @@ export default function AdminExamsPage() {
                 </div>
 
 
-                {/* ===================================== */}
                 {/* END DATE */}
-                {/* ===================================== */}
 
                 <div>
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-
                     End Date
-
                   </label>
-
 
                   <input
                     type="date"
@@ -1329,9 +1723,7 @@ export default function AdminExamsPage() {
                 </div>
 
 
-                {/* ===================================== */}
                 {/* ACTIVE */}
-                {/* ===================================== */}
 
                 <div className="md:col-span-2">
 
@@ -1343,7 +1735,6 @@ export default function AdminExamsPage() {
                         Active Exam
                       </p>
 
-
                       <p className="mt-1 text-xs text-slate-500">
                         Active exams are
                         available for exam
@@ -1351,7 +1742,6 @@ export default function AdminExamsPage() {
                       </p>
 
                     </div>
-
 
                     <input
                       type="checkbox"
@@ -1372,12 +1762,9 @@ export default function AdminExamsPage() {
               </div>
 
 
-              {/* ========================================= */}
               {/* BUTTONS */}
-              {/* ========================================= */}
 
               <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
-
 
                 <button
                   type="button"
@@ -1389,9 +1776,7 @@ export default function AdminExamsPage() {
                   }
                   className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                 >
-
                   Cancel
-
                 </button>
 
 
@@ -1405,15 +1790,12 @@ export default function AdminExamsPage() {
 
                   {saving ? (
                     <>
-
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
 
                       Saving...
-
                     </>
                   ) : (
                     <>
-
                       {editingExam ? (
                         <Pencil
                           size={17}
@@ -1427,7 +1809,6 @@ export default function AdminExamsPage() {
                       {editingExam
                         ? "Update Exam"
                         : "Save Exam"}
-
                     </>
                   )}
 
