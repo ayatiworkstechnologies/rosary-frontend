@@ -15,8 +15,9 @@ import {
 } from "lucide-react";
 
 import AuthGuard from "@/components/auth/AuthGuard";
+import AppShell from "@/components/ui/AppShell";
 import MobileBottomNav from "@/components/common/MobileBottomNav";
-import PortalShell from "@/components/common/PortalShell";
+import useStoredUser from "@/hooks/useStoredUser";
 
 const parentNavigation = [
   {
@@ -86,18 +87,14 @@ const parentBottomNavigation = [
 export default function ParentLayout({
   children,
 }) {
+  const user = useStoredUser();
+
   return (
     <AuthGuard allowedRole="PARENT">
-
-      <PortalShell
-        portalName="Parent Portal"
-        navItems={parentNavigation}
-      >
+      <AppShell portal="parent" navItems={parentNavigation} user={user}>
         {children}
-      </PortalShell>
-
+      </AppShell>
       <MobileBottomNav items={parentBottomNavigation} />
-
     </AuthGuard>
   );
 }

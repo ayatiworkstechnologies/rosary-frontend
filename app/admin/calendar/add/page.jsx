@@ -11,7 +11,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminCalendarEvent,
@@ -236,8 +235,7 @@ export default function AddCalendarEventPage() {
 
 
   return (
-    <AdminShell>
-
+    <>
       <Link
         href="/admin/calendar"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#0075FF]"
@@ -248,7 +246,7 @@ export default function AddCalendarEventPage() {
       </Link>
 
 
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
         Add School Event
       </h1>
 
@@ -272,7 +270,7 @@ export default function AddCalendarEventPage() {
 
           <div>
 
-            <h2 className="font-semibold text-gray-900">
+            <h2 className="font-semibold text-[#0B3A67]">
               Event Information
             </h2>
 
@@ -616,7 +614,6 @@ export default function AddCalendarEventPage() {
         </div>
 
       </form>
-
-    </AdminShell>
+    </>
   );
 }

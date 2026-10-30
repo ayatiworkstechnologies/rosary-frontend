@@ -15,7 +15,6 @@ import {
   X,
 } from "lucide-react";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminResult,
@@ -977,8 +976,7 @@ export default function AdminResultsPage() {
   // ======================================================
 
   return (
-    <AdminShell>
-
+    <>
       <div className="mx-auto max-w-[1500px]">
 
 
@@ -990,7 +988,7 @@ export default function AdminResultsPage() {
 
           <div>
 
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+            <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
               Results
             </h1>
 
@@ -1215,7 +1213,7 @@ export default function AdminResultsPage() {
               </div>
 
 
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-bold text-[#0B3A67]">
                 No results found
               </h3>
 
@@ -1323,7 +1321,7 @@ export default function AdminResultsPage() {
 
                             <div className="min-w-0">
 
-                              <p className="max-w-[220px] truncate text-sm font-semibold text-slate-900">
+                              <p className="max-w-[220px] truncate text-sm font-semibold text-[#0B3A67]">
 
                                 {item.student_name}
 
@@ -1527,7 +1525,7 @@ export default function AdminResultsPage() {
 
               <div>
 
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-[#0B3A67]">
 
                   {editingResult
                     ? "Edit Result"
@@ -1938,6 +1936,6 @@ export default function AdminResultsPage() {
 
       )}
 
-    </AdminShell>
+    </>
   );
 }

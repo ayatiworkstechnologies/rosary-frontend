@@ -12,7 +12,6 @@ import {
 
 import Link from "next/link";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminClass,
@@ -196,7 +195,6 @@ export default function EditAdminClassPage() {
 
   if (loading) {
     return (
-      <AdminShell>
         <div className="flex min-h-[400px] items-center justify-center">
           <div className="text-center">
             <RefreshCw
@@ -209,12 +207,11 @@ export default function EditAdminClassPage() {
             </p>
           </div>
         </div>
-      </AdminShell>
     );
   }
 
   return (
-    <AdminShell>
+    <>
       <section className="mb-6">
         <Link
           href="/admin/classes"
@@ -225,7 +222,7 @@ export default function EditAdminClassPage() {
           Back to Classes
         </Link>
 
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+        <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
           Edit Class
         </h1>
 
@@ -246,7 +243,7 @@ export default function EditAdminClassPage() {
             </div>
 
             <div>
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-[#0B3A67]">
                 Class Information
               </h2>
 
@@ -379,6 +376,6 @@ export default function EditAdminClassPage() {
           </div>
         </form>
       </section>
-    </AdminShell>
+    </>
   );
 }

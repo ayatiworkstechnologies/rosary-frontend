@@ -6,7 +6,6 @@ import {
 } from "next/navigation";
 import Link from "next/link";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminClass,
@@ -127,8 +126,7 @@ export default function AddAdminClassPage() {
   };
 
   return (
-    <AdminShell>
-      {/* Header */}
+    <>
       <section className="mb-6">
         <Link
           href="/admin/classes"
@@ -139,7 +137,7 @@ export default function AddAdminClassPage() {
           Back to Classes
         </Link>
 
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+        <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
           Add Class
         </h1>
 
@@ -161,7 +159,7 @@ export default function AddAdminClassPage() {
             </div>
 
             <div>
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-[#0B3A67]">
                 Class Information
               </h2>
 
@@ -312,6 +310,6 @@ export default function AddAdminClassPage() {
           </div>
         </form>
       </section>
-    </AdminShell>
+    </>
   );
 }

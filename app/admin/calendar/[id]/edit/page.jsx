@@ -12,7 +12,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminCalendarEvent,
@@ -359,7 +358,6 @@ export default function EditCalendarEventPage() {
 
   if (loading) {
     return (
-      <AdminShell>
         <div className="flex min-h-[450px] items-center justify-center">
           <div className="text-center">
             <RefreshCw
@@ -372,18 +370,12 @@ export default function EditCalendarEventPage() {
             </p>
           </div>
         </div>
-      </AdminShell>
     );
   }
 
 
   return (
-    <AdminShell>
-
-      {/* ================================================= */}
-      {/* BACK */}
-      {/* ================================================= */}
-
+    <>
       <Link
         href="/admin/calendar"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 transition hover:text-[#0075FF]"
@@ -400,7 +392,7 @@ export default function EditCalendarEventPage() {
 
       <section className="mb-6">
 
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+        <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
           Edit School Event
         </h1>
 
@@ -432,7 +424,7 @@ export default function EditCalendarEventPage() {
           </div>
 
           <div>
-            <h2 className="font-semibold text-gray-900">
+            <h2 className="font-semibold text-[#0B3A67]">
               Event Information
             </h2>
 
@@ -795,7 +787,6 @@ export default function EditCalendarEventPage() {
         </div>
 
       </form>
-
-    </AdminShell>
+    </>
   );
 }

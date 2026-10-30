@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { backendContext, enforceLocalOnly, login } from "./helpers";
+import {
+  accounts,
+  backendContext,
+  enforceLocalOnly,
+  LOCAL_BACKEND,
+  login,
+} from "./helpers";
 
 /**
  * Responsive + quality verification across tablet and mobile
@@ -62,6 +68,48 @@ test.describe("Responsive layout verification", () => {
     await expect(page.getByRole("heading", { name: "ROSARY" })).toBeVisible();
     await expect(page.locator('input[name="username"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
+    await noHorizontalOverflow(page);
+  });
+
+  test("admin notification dropdown usable on small screens", async ({ page, request }) => {
+    // guarantee at least one admin notification via teacher result
+    // save (exam2 stays unpublished across the desktop suite, so a
+    // fresh result save is always permitted here)
+    const teacher = await backendContext(request, "teacher");
+    const saveResp = await request.post(
+      `${LOCAL_BACKEND}/api/v1/teacher/classes/${accounts().class_a_id}/results`,
+      {
+        headers: teacher.headers,
+        data: {
+          exam_id: accounts().exam2_id,
+          subject: "Mathematics",
+          results: [
+            { student_id: accounts().student1_id, max_marks: 100, obtained_marks: 90 },
+          ],
+        },
+      },
+    );
+    expect(saveResp.ok(), `results save for responsive bell: ${saveResp.status()}`).toBeTruthy();
+
+    await enforceLocalOnly(page);
+    await login(page, "admin", "admin");
+    await expect(page).toHaveURL(/\/admin/);
+
+    // the bell is reachable in the compact header and opens a
+    // full-width (100vw - 3rem) panel on small screens
+    const bell = page.getByRole("button", { name: /Notifications/i }).first();
+    await expect(bell).toBeVisible({ timeout: 15_000 });
+    await bell.click();
+
+    const dropdown = page.getByRole("dialog", { name: "Notifications" });
+    await expect(dropdown).toBeVisible();
+
+    const item = dropdown.getByRole("button").filter({
+      hasText: /Results Submitted|No notifications/i,
+    }).first();
+    await expect(item).toBeVisible({ timeout: 15_000 });
+
+    // panel never overflows the viewport on small screens
     await noHorizontalOverflow(page);
   });
 });

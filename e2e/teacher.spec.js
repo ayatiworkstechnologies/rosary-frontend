@@ -5,6 +5,7 @@ import {
   backendContext,
   enforceLocalOnly,
   expectPortalBlocked,
+  LOCAL_BACKEND,
   login,
 } from "./helpers";
 
@@ -194,6 +195,61 @@ test.describe("Teacher Portal", () => {
     for (let i = 1; i < total; i += 2) {
       await expect(markInputs.nth(i)).toHaveValue("88");
     }
+  });
+
+  test("notification bell: live inbox with exam-schedule events", async ({ page, request }) => {
+    // An admin-created schedule for class A guarantees the class-A
+    // teacher receives an EXAM_SCHEDULE notification (backend
+    // tests cover the fan-out rules; here we verify the UI flow).
+    const admin = await backendContext(request, "admin");
+    const scheduleResp = await request.post(
+      `${LOCAL_BACKEND}/api/v1/admin/exam-schedules`,
+      {
+        headers: admin.headers,
+        data: {
+          exam_id: accounts().exam_id,
+          class_id: accounts().class_a_id,
+          subject: `Bell Test ${Date.now()}`,
+          exam_date: new Date(Date.now() - 86_400_000).toISOString().slice(0, 10),
+          start_time: "13:00:00",
+          end_time: "14:00:00",
+          max_marks: 100,
+        },
+      },
+    );
+    expect(
+      scheduleResp.ok(),
+      `schedule for bell test: ${scheduleResp.status()}`
+    ).toBeTruthy();
+    const schedule = await scheduleResp.json();
+    const scheduleId = schedule.id ?? schedule?.data?.id;
+    expect(scheduleId).toBeTruthy();
+
+    // teacher reloads the dashboard - the bell badge reflects unread
+    await page.goto("/teacher/dashboard");
+    const bell = page.getByRole("button", { name: /Notifications/i }).first();
+    await expect(bell).toBeVisible({ timeout: 15_000 });
+
+    // open the dropdown and find the schedule event
+    await bell.click();
+    const dropdown = page.getByRole("dialog", { name: "Notifications" });
+    await expect(dropdown).toBeVisible();
+
+    const item = dropdown.getByRole("button").filter({
+      hasText: /New Exam Schedule/i,
+    }).first();
+    await expect(item).toBeVisible({ timeout: 15_000 });
+
+    // clicking the unread item marks it as read and closes the panel
+    await item.click();
+    await expect(dropdown).toBeHidden({ timeout: 15_000 });
+
+    // cleanup so later runs stay deterministic - the schedule was
+    // created on the teacher's own class, so the teacher deletes it.
+    await request.delete(
+      `${LOCAL_BACKEND}/api/v1/teacher/exam-schedule/${scheduleId}`,
+      { headers: (await backendContext(request, "teacher")).headers }
+    );
   });
 
   test("teacher cannot open admin portal", async ({ page }) => {

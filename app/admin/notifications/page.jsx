@@ -315,7 +315,7 @@ export default function AdminNotificationsPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-8 md:px-8">
       <div className="mx-auto max-w-5xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">
+          <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
             Admin Notifications
           </h1>
           <p className="mt-2 text-sm text-slate-500">
@@ -492,7 +492,7 @@ export default function AdminNotificationsPage() {
             </div>
 
             {previewIsCurrent && (
-              <p className="mt-4 text-lg font-bold text-slate-900">
+              <p className="mt-4 text-lg font-bold text-[#0B3A67]">
                 {recipientCount.toLocaleString()} eligible parent(s)
               </p>
             )}
@@ -571,7 +571,7 @@ export default function AdminNotificationsPage() {
           >
             <h2
               id="confirm-notification-title"
-              className="text-xl font-bold text-slate-900"
+              className="text-xl font-bold text-[#0B3A67]"
             >
               Confirm Notification
             </h2>
@@ -582,7 +582,7 @@ export default function AdminNotificationsPage() {
             </p>
 
             <div className="rounded-lg bg-slate-50 p-4">
-              <p className="font-semibold text-slate-900">
+              <p className="font-semibold text-[#0B3A67]">
                 {form.title}
               </p>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-600">

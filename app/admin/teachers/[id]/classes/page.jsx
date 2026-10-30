@@ -11,7 +11,6 @@ import {
   useParams,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminTeacher,
@@ -240,7 +239,6 @@ export default function TeacherClassesPage() {
 
   if (loading) {
     return (
-      <AdminShell>
         <div className="flex min-h-[400px] items-center justify-center">
 
           <RefreshCw
@@ -249,13 +247,11 @@ export default function TeacherClassesPage() {
           />
 
         </div>
-      </AdminShell>
     );
   }
 
   return (
-    <AdminShell>
-
+    <>
       <Link
         href="/admin/teachers"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#0075FF]"
@@ -265,7 +261,7 @@ export default function TeacherClassesPage() {
         Back to Teachers
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
         Class Assignments
       </h1>
 
@@ -297,7 +293,7 @@ export default function TeacherClassesPage() {
             className="text-[#0075FF]"
           />
 
-          <h2 className="font-semibold text-gray-900">
+          <h2 className="font-semibold text-[#0B3A67]">
             Assign Class
           </h2>
 
@@ -372,7 +368,7 @@ export default function TeacherClassesPage() {
 
         <div className="border-b border-gray-100 p-5">
 
-          <h2 className="font-semibold text-gray-900">
+          <h2 className="font-semibold text-[#0B3A67]">
             Assigned Classes
           </h2>
 
@@ -409,7 +405,7 @@ export default function TeacherClassesPage() {
 
       </section>
 
-    </AdminShell>
+    </>
   );
 }
 

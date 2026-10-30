@@ -30,8 +30,6 @@ import {
 
   CircleAlert,
 
-  Clock3,
-
   GraduationCap,
 
   Loader2,
@@ -919,23 +917,7 @@ export default function ParentDashboardPage() {
 
                     >
 
-                      {
-
-                        child.full_name
-
-                      }
-
-
-
-                      {" - "}
-
-
-
-                      {
-
-                        child.name
-
-                      }
+                      {child.full_name}{" • "}{child.class_name || child.admission_no}
 
                     </option>
 
@@ -1155,11 +1137,7 @@ export default function ParentDashboardPage() {
 
               rounded-2xl
 
-              bg-gradient-to-r
-
-              from-[#0075FF]
-
-              to-[#0B3A67]
+              bg-[#0075FF]
 
               p-5
 
@@ -1457,9 +1435,8 @@ export default function ParentDashboardPage() {
 
               iconClass="
 
-                bg-green-100
-
-                text-green-600
+                bg-emerald-50
+                text-emerald-600
 
               "
 
@@ -1541,9 +1518,8 @@ export default function ParentDashboardPage() {
 
               iconClass="
 
-                bg-purple-100
-
-                text-purple-600
+                bg-violet-50
+                text-violet-600
 
               "
 
@@ -1593,9 +1569,8 @@ export default function ParentDashboardPage() {
 
               iconClass="
 
-                bg-orange-100
-
-                text-orange-600
+                bg-amber-50
+                text-amber-600
 
               "
 
@@ -2715,11 +2690,15 @@ function SmallInfo({
 
           text-[10px]
 
-          uppercase
 
-          tracking-wide
+      
+      uppercase
 
-          text-slate-400
+
+      tracking-wide
+
+
+      text-[#94A3B8]
 
         "
 

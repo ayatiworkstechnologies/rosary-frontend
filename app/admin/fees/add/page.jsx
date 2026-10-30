@@ -12,7 +12,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminFee,
@@ -411,10 +410,7 @@ export default function AddAdminFeePage() {
   // =====================================================
 
   return (
-    <AdminShell>
-
-      {/* BACK */}
-
+    <>
       <Link
         href="/admin/fees"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 transition hover:text-[#0075FF]"
@@ -429,7 +425,7 @@ export default function AddAdminFeePage() {
 
       <section className="mb-6">
 
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+        <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
           Add Student Fee
         </h1>
 
@@ -458,7 +454,7 @@ export default function AddAdminFeePage() {
 
           <div>
 
-            <h2 className="font-semibold text-gray-900">
+            <h2 className="font-semibold text-[#0B3A67]">
               Fee Information
             </h2>
 
@@ -513,7 +509,7 @@ export default function AddAdminFeePage() {
                 className="text-[#0075FF]"
               />
 
-              <h3 className="font-semibold text-gray-900">
+              <h3 className="font-semibold text-[#0B3A67]">
                 Student
               </h3>
 
@@ -627,7 +623,7 @@ export default function AddAdminFeePage() {
 
                     <div>
 
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-[#0B3A67]">
                         {
                           selectedStudent.full_name
                         }
@@ -699,7 +695,7 @@ export default function AddAdminFeePage() {
                 className="text-[#0075FF]"
               />
 
-              <h3 className="font-semibold text-gray-900">
+              <h3 className="font-semibold text-[#0B3A67]">
                 Fee Details
               </h3>
 
@@ -898,7 +894,7 @@ export default function AddAdminFeePage() {
                 className="text-[#0075FF]"
               />
 
-              <h3 className="font-semibold text-gray-900">
+              <h3 className="font-semibold text-[#0B3A67]">
                 Initial Payment
               </h3>
 
@@ -1093,7 +1089,7 @@ export default function AddAdminFeePage() {
                     Total
                   </p>
 
-                  <p className="mt-1 font-bold text-gray-900">
+                  <p className="mt-1 font-bold text-[#0B3A67]">
                     ₹
                     {amount.toLocaleString(
                       "en-IN"
@@ -1240,7 +1236,6 @@ export default function AddAdminFeePage() {
         </div>
 
       </form>
-
-    </AdminShell>
+    </>
   );
 }

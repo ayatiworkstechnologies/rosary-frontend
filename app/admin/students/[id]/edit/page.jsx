@@ -12,7 +12,6 @@ import {
 
 import Link from "next/link";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminStudent,
@@ -197,20 +196,17 @@ export default function EditAdminStudentPage() {
 
   if (loading) {
     return (
-      <AdminShell>
         <div className="flex min-h-[400px] items-center justify-center">
           <RefreshCw
             size={28}
             className="animate-spin text-[#0075FF]"
           />
         </div>
-      </AdminShell>
     );
   }
 
   return (
-    <AdminShell>
-
+    <>
       <Link
         href="/admin/students"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#0075FF]"
@@ -220,7 +216,7 @@ export default function EditAdminStudentPage() {
         Back to Students
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
         Edit Student
       </h1>
 
@@ -382,6 +378,6 @@ export default function EditAdminStudentPage() {
         </form>
       </section>
 
-    </AdminShell>
+    </>
   );
 }
