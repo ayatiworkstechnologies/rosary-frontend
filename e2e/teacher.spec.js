@@ -85,7 +85,7 @@ test.describe("Teacher Portal", () => {
   test("exam schedule: create, edit, delete (full CRUD)", async ({ page }) => {
     await page.goto("/teacher/exam-schedule");
 
-    await expect(page.getByRole("button", { name: /Add Schedule/i })).toBeEnabled({
+    await expect(page.getByRole("button", { name: /Add Schedule/i }).first()).toBeEnabled({
       timeout: 15_000,
     });
 
