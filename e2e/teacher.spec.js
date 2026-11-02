@@ -55,7 +55,7 @@ test.describe("Teacher Portal", () => {
   test("homework: create and see it listed", async ({ page }) => {
     await page.goto("/teacher/homework");
 
-    await expect(page.getByText(/Assigned Homework/i)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: /Assigned Homework/i })).toBeVisible({ timeout: 15_000 });
 
     // open the Add Homework modal (page auto-selects the first assigned class)
     const openCreate = page.getByRole("button", { name: /Add Homework/i }).first();

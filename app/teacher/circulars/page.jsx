@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoCirculars } from "@/components/demo/DemoSections";
+
 import {
   useEffect,
   useMemo,
@@ -214,6 +216,10 @@ export default function TeacherCircularsPage() {
         </p>
 
       </div>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoCirculars />
 
 
       {/* =========================================

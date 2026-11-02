@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoCalendar } from "@/components/demo/DemoSections";
+
 import {
   useEffect,
   useMemo,
@@ -783,6 +785,10 @@ export default function AdminCalendarPage() {
         </div>
 
       </section>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoCalendar />
 
     </>
   );

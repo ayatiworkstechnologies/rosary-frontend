@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoExamSchedule } from "@/components/demo/DemoSections";
 import { useSearchParams } from "next/navigation";
 
 import {
@@ -1423,6 +1424,10 @@ export default function TeacherExamSchedulePage() {
         </button>
 
       </div>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoExamSchedule portal="teacher" />
 
 
       {/* ================================================= */}

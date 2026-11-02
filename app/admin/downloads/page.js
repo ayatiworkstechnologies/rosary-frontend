@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoDownloads } from "@/components/demo/DemoSections";
+
 import {
   useEffect,
   useMemo,
@@ -1634,6 +1636,10 @@ export default function AdminDownloadsPage() {
           )}
 
         </div>
+
+        {/* DEMO PREVIEW (dev-only; renders nothing unless
+            NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+        <DemoDownloads />
 
       </div>
 

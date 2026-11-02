@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoAdminDashboard } from "@/components/demo/DemoSections";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -663,6 +665,10 @@ export default function AdminDashboardPage() {
         </div>
 
       </section>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoAdminDashboard />
     </>
   );
 }

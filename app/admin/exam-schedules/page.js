@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoExamSchedule } from "@/components/demo/DemoSections";
+
 import {
   useEffect,
   useMemo,
@@ -1215,6 +1217,10 @@ export default function AdminExamSchedulesPage() {
           )}
 
         </div>
+
+        {/* DEMO PREVIEW (dev-only; renders nothing unless
+            NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+        <DemoExamSchedule portal="admin" />
 
       </div>
 

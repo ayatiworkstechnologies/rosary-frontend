@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoResults } from "@/components/demo/DemoSections";
+
 import {
 
   useEffect,
@@ -665,6 +667,10 @@ export default function ParentResultsPage() {
         </p>
 
       </div>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoResults portal="parent" />
 
       {/* FILTERS */}
 

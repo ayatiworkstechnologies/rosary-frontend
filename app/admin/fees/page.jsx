@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoAdminFees } from "@/components/demo/DemoSections";
+
 import {
   useEffect,
   useMemo,
@@ -952,6 +954,10 @@ export default function AdminFeesPage() {
         </div>
 
       </section>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoAdminFees />
     </>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoAttendance } from "@/components/demo/DemoSections";
+
 import {
 
   useEffect,
@@ -643,6 +645,10 @@ const requestedStudentId =
         </p>
 
       </div>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoAttendance portal="parent" />
 
       {/* FILTERS */}
 
