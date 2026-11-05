@@ -94,7 +94,7 @@ export default function ParentLayout({
       <AppShell portal="parent" navItems={parentNavigation} user={user}>
         {children}
       </AppShell>
-      <MobileBottomNav items={parentBottomNavigation} />
+      <MobileBottomNav items={parentBottomNavigation} portal="parent" />
     </AuthGuard>
   );
 }
