@@ -13,10 +13,12 @@ const nextConfig = {
 
   async rewrites() {
     // LOCAL_BACKEND_URL is a local-development / E2E-test override only.
-    // Production (Vercel) must keep proxying to the real backend.
+    // Production (Vercel) routes through the TLS nginx domain; the app and
+    // the backend exchange paths 1:1 (api.rosarychennai.com proxies
+    // location / -> 127.0.0.1:8016), so no path prefix rewrite is needed.
     const backendUrl =
       process.env.LOCAL_BACKEND_URL ||
-      "http://89.167.92.220:8016";
+      "https://www.api.rosarychennai.com";
 
     return [
       {
