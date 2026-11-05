@@ -124,7 +124,7 @@ export function DemoSection({
             size={14}
           />
 
-          {DEMO_PREVIEW_NOTICE}
+          {DEMO_PREVIEW_NOTICE}: {title}
         </span>
       </div>
 

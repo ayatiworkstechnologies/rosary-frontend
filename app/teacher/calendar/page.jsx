@@ -9,7 +9,6 @@ import {
 } from "react";
 
 import {
-  BookOpen,
   CalendarDays,
   Clock3,
   GraduationCap,
@@ -17,7 +16,6 @@ import {
   MapPin,
   PartyPopper,
   Search,
-  Users,
 } from "lucide-react";
 
 import {

@@ -5,6 +5,8 @@ import {
   useState,
 } from "react";
 
+import Image from "next/image";
+
 import {
   BookOpen,
   BriefcaseBusiness,
@@ -23,6 +25,8 @@ import {
 import {
   getTeacherProfile,
 } from "@/services/teacherService";
+
+const passthroughImageLoader = ({ src }) => src;
 
 
 // =========================================================
@@ -301,13 +305,17 @@ export default function TeacherProfilePage() {
               {/* IMAGE / INITIALS */}
 
               {profile.profile_image_url ? (
-                <img
+                <Image
+                  loader={passthroughImageLoader}
                   src={
                     profile.profile_image_url
                   }
                   alt={
                     profile.name
                   }
+                  width={80}
+                  height={80}
+                  unoptimized
                   className="
                     h-20
                     w-20

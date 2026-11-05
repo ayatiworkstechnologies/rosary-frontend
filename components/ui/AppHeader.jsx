@@ -17,9 +17,6 @@ export default function AppHeader({
   subtitle,
   onMenuClick,
   user,
-  notificationCount = 0,
-  onNotificationClick,
-  notificationSlot,
   onLogout,
 }) {
   const [profileOpen, setProfileOpen] = useState(false);

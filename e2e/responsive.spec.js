@@ -16,7 +16,6 @@ test.describe("Responsive layout verification", () => {
   async function noHorizontalOverflow(page) {
     const overflow = await page.evaluate(() => {
       const doc = document.documentElement;
-      const tolerance = 2; // px
       return doc.scrollWidth - doc.clientWidth;
     });
     expect(

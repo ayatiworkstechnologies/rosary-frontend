@@ -213,8 +213,4 @@ test.describe("Admin Portal", () => {
     // AuthGuard logs the admin out and bounces to /login
     await expectPortalBlocked(page, "/teacher", "/admin");
   });
-
-  test.afterEach(async ({ page }) => {
-    // Each test runs in a fresh browser context; nothing to clean up.
-  });
 });
