@@ -88,6 +88,10 @@ export default defineConfig({
       timeout: 300_000,
       env: {
         LOCAL_BACKEND_URL: backendUrl,
+        // NEXT_PUBLIC_* values are frozen into the browser bundle at build
+        // time. Override .env.local so E2E traffic uses the local proxy and
+        // can never be directed at the production API.
+        NEXT_PUBLIC_API_URL: "/backend/api/v1",
       },
     },
   ],

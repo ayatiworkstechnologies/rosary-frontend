@@ -91,7 +91,7 @@ export default function NotificationDropdown({ source = "parent" }) {
       active = false;
       if (intervalId) clearInterval(intervalId);
     };
-  }, []);
+  }, [getUnreadCount]);
 
   // Close on outside click / Escape while the dropdown is open.
   useEffect(() => {

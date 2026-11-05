@@ -382,7 +382,7 @@ const requestedStudentId =
 
     loadChildren();
 
-  }, []);
+  }, [requestedStudentId]);
 
   // =======================================================
 
