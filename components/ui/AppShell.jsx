@@ -14,8 +14,6 @@ export default function AppShell({
   title,
   subtitle,
   user,
-  notificationCount = 0,
-  onNotificationClick,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
@@ -60,8 +58,6 @@ export default function AppShell({
           subtitle={pageSubtitle}
           onMenuClick={() => setSidebarOpen(true)}
           user={user}
-          notificationCount={notificationCount}
-          onNotificationClick={onNotificationClick}
           onLogout={handleLogout}
         />
 

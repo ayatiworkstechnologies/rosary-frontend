@@ -8,6 +8,8 @@ import {
 
 } from "react";
 
+import Image from "next/image";
+
 import {
 
   BriefcaseBusiness,
@@ -37,6 +39,8 @@ import {
   getParentProfile,
 
 } from "@/services/parentService";
+
+const passthroughImageLoader = ({ src }) => src;
 
 // =========================================================
 
@@ -404,7 +408,9 @@ export default function ParentProfilePage() {
 
               {profile.profile_image_url ? (
 
-                <img
+                <Image
+
+                  loader={passthroughImageLoader}
 
                   src={
 
@@ -417,6 +423,12 @@ export default function ParentProfilePage() {
                     profile.name
 
                   }
+
+                  width={80}
+
+                  height={80}
+
+                  unoptimized
 
                   className="
 

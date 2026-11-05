@@ -30,8 +30,6 @@ import {
 
   Tag,
 
-  UserRound,
-
   Users,
 
 } from "lucide-react";

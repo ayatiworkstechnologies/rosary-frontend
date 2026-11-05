@@ -89,7 +89,7 @@ test.describe("Teacher Portal", () => {
       timeout: 15_000,
     });
 
-    const messages = autoDialog(page);
+    autoDialog(page);
 
     // CREATE - the modal pre-fills the page-selected class, exam and subject
     await page.getByRole("button", { name: /Add Schedule/i }).first().click();
@@ -137,7 +137,7 @@ test.describe("Teacher Portal", () => {
     await expect(page.getByRole("row").filter({ hasText: "E2E-102" })).toHaveCount(0);
   });
 
-  test("results: enter marks and see validation error for over-marks", async ({ page, request }) => {
+  test("results: enter marks and see validation error for over-marks", async ({ page }) => {
     await page.goto("/teacher/results");
 
     // The parent spec publishes TESTEXAM in beforeAll, so the
@@ -145,7 +145,6 @@ test.describe("Teacher Portal", () => {
     // only exam the teacher can still edit. Select it explicitly
     // to keep the test deterministic regardless of spec order.
     const acc = accounts();
-    const ctx = await backendContext(request, "teacher");
     const examSelect = page.locator("select").nth(1);
     await examSelect.selectOption({ value: String(acc.exam2_id) });
 
