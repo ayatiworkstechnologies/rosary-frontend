@@ -20,7 +20,6 @@ import {
   X,
 } from "lucide-react";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminUser,
@@ -840,13 +839,13 @@ export default function AdminUsersPage() {
   // ======================================================
 
   return (
-    <AdminShell>
+    <>
       <div className="mx-auto w-full max-w-[1500px]">
         {/* HEADER */}
 
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+            <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
               Users
             </h1>
 
@@ -896,7 +895,7 @@ export default function AdminUsersPage() {
               Total Users
             </p>
 
-            <p className="mt-2 text-2xl font-bold text-slate-900">
+            <p className="mt-2 text-2xl font-bold text-[#0B3A67]">
               {pagination.total}
             </p>
           </div>
@@ -919,7 +918,7 @@ export default function AdminUsersPage() {
               Showing Records
             </p>
 
-            <p className="mt-2 text-2xl font-bold text-slate-900">
+            <p className="mt-2 text-2xl font-bold text-[#0B3A67]">
               {users.length}
             </p>
           </div>
@@ -1016,7 +1015,7 @@ export default function AdminUsersPage() {
                 />
               </div>
 
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-bold text-[#0B3A67]">
                 No users found
               </h3>
 
@@ -1099,7 +1098,7 @@ export default function AdminUsersPage() {
                                 </div>
 
                                 <div className="min-w-0">
-                                  <p className="max-w-[250px] truncate text-sm font-semibold text-slate-900">
+                                  <p className="max-w-[250px] truncate text-sm font-semibold text-[#0B3A67]">
                                     {user.name}
                                   </p>
 
@@ -1348,7 +1347,7 @@ export default function AdminUsersPage() {
           <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 md:px-6">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-[#0B3A67]">
                   {editingUser
                     ? "Edit User"
                     : "Add New User"}
@@ -1606,7 +1605,7 @@ export default function AdminUsersPage() {
           <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-[#0B3A67]">
                   Reset Password
                 </h2>
 
@@ -1735,6 +1734,7 @@ export default function AdminUsersPage() {
           </div>
         </div>
       )}
-    </AdminShell>
+
+    </>
   );
 }

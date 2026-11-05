@@ -11,7 +11,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminCircular,
@@ -204,7 +203,7 @@ export default function AddCircularPage() {
     "h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#0075FF]";
 
   return (
-    <AdminShell>
+    <div>
       <Link
         href="/admin/circulars"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#0075FF]"
@@ -213,7 +212,7 @@ export default function AddCircularPage() {
         Back to Circulars
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
         Add Circular
       </h1>
 
@@ -233,7 +232,7 @@ export default function AddCircularPage() {
           </div>
 
           <div>
-            <h2 className="font-semibold text-gray-900">
+            <h2 className="font-semibold text-[#0B3A67]">
               Circular Information
             </h2>
 
@@ -452,6 +451,6 @@ export default function AddCircularPage() {
           </button>
         </div>
       </form>
-    </AdminShell>
+    </div>
   );
 }

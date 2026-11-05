@@ -13,7 +13,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminFee,
@@ -322,7 +321,6 @@ export default function AdminFeePaymentPage() {
 
   if (loading) {
     return (
-      <AdminShell>
 
         <div className="flex min-h-[450px] items-center justify-center">
 
@@ -341,14 +339,12 @@ export default function AdminFeePaymentPage() {
 
         </div>
 
-      </AdminShell>
     );
   }
 
 
   if (!fee) {
     return (
-      <AdminShell>
 
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
 
@@ -373,16 +369,12 @@ export default function AdminFeePaymentPage() {
 
         </div>
 
-      </AdminShell>
     );
   }
 
 
   return (
-    <AdminShell>
-
-      {/* BACK */}
-
+    <>
       <Link
         href="/admin/fees"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 transition hover:text-[#0075FF]"
@@ -397,7 +389,7 @@ export default function AdminFeePaymentPage() {
 
       <section className="mb-6">
 
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+        <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
           Update Fee Payment
         </h1>
 
@@ -430,7 +422,7 @@ export default function AdminFeePaymentPage() {
 
             <div>
 
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-[#0B3A67]">
                 Payment Information
               </h2>
 
@@ -757,7 +749,7 @@ export default function AdminFeePaymentPage() {
 
             <div>
 
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-[#0B3A67]">
                 Fee Summary
               </h2>
 
@@ -778,7 +770,7 @@ export default function AdminFeePaymentPage() {
               Student
             </p>
 
-            <p className="mt-2 font-semibold text-gray-900">
+            <p className="mt-2 font-semibold text-[#0B3A67]">
               {fee.student
                 ?.full_name ||
                 "-"}
@@ -819,7 +811,7 @@ export default function AdminFeePaymentPage() {
               Fee
             </p>
 
-            <p className="mt-2 font-semibold text-gray-900">
+            <p className="mt-2 font-semibold text-[#0B3A67]">
               {fee.fee_title}
             </p>
 
@@ -841,7 +833,7 @@ export default function AdminFeePaymentPage() {
                 Total Amount
               </span>
 
-              <span className="font-bold text-gray-900">
+              <span className="font-bold text-[#0B3A67]">
                 {formatCurrency(
                   totalAmount
                 )}
@@ -920,6 +912,6 @@ export default function AdminFeePaymentPage() {
 
       </div>
 
-    </AdminShell>
+    </>
   );
 }

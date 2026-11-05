@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoExamSchedule } from "@/components/demo/DemoSections";
 import { useSearchParams } from "next/navigation";
 
 import {
@@ -1424,6 +1425,10 @@ export default function TeacherExamSchedulePage() {
 
       </div>
 
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoExamSchedule portal="teacher" />
+
 
       {/* ================================================= */}
       {/* SUCCESS */}
@@ -1820,6 +1825,7 @@ export default function TeacherExamSchedulePage() {
                               )
                             }
                             title="Delete schedule"
+                            aria-label="Delete schedule"
                             className="
                               flex
                               h-9
@@ -2498,6 +2504,7 @@ function ExamCard({
 
           <button
             type="button"
+            aria-label="Edit schedule"
             onClick={
               onEdit
             }
@@ -2513,6 +2520,7 @@ function ExamCard({
 
           <button
             type="button"
+            aria-label={`Delete ${(item.name || item.class_name || "schedule")}`}
             disabled={
               deleting
             }

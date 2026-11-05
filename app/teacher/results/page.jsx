@@ -1,4 +1,5 @@
 "use client";
+import { DemoResults } from "@/components/demo/DemoSections";
 import { useSearchParams } from "next/navigation";
 
 import {
@@ -869,6 +870,10 @@ export default function TeacherResultsPage() {
         </button>
 
       </div>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoResults portal="teacher" />
 
 
       {/* =========================================

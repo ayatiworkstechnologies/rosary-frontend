@@ -12,7 +12,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminCircular,
@@ -225,19 +224,17 @@ export default function EditCircularPage() {
 
   if (loading) {
     return (
-      <AdminShell>
         <div className="flex min-h-[400px] items-center justify-center">
           <RefreshCw
             size={28}
             className="animate-spin text-[#0075FF]"
           />
         </div>
-      </AdminShell>
     );
   }
 
   return (
-    <AdminShell>
+    <div>
       <Link
         href="/admin/circulars"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#0075FF]"
@@ -246,7 +243,7 @@ export default function EditCircularPage() {
         Back to Circulars
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
         Edit Circular
       </h1>
 
@@ -442,6 +439,6 @@ export default function EditCircularPage() {
           </div>
         </div>
       </form>
-    </AdminShell>
+    </div>
   );
 }

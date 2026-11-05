@@ -169,6 +169,45 @@ test.describe("Admin Portal", () => {
     });
   });
 
+  test("notification bell: live inbox with result-submission events", async ({ page, request }) => {
+    // A teacher result save guarantees every admin receives a
+    // RESULT_SUBMISSION notification (backend tests cover the
+    // fan-out rules; here we verify the admin UI flow).
+    const teacher = await backendContext(request, "teacher");
+    const saveResp = await request.post(
+      `${LOCAL_BACKEND}/api/v1/teacher/classes/${accounts().class_a_id}/results`,
+      {
+        headers: teacher.headers,
+        data: {
+          exam_id: accounts().exam_id,
+          subject: "Mathematics",
+          results: [
+            { student_id: accounts().student1_id, max_marks: 100, obtained_marks: 90 },
+          ],
+        },
+      },
+    );
+    expect(saveResp.ok(), `results save for bell test: ${saveResp.status()}`).toBeTruthy();
+
+    // admin reloads the dashboard - the bell badge reflects unread
+    await page.goto("/admin/dashboard");
+    const bell = page.getByRole("button", { name: /Notifications/i }).first();
+    await expect(bell).toBeVisible({ timeout: 15_000 });
+
+    await bell.click();
+    const dropdown = page.getByRole("dialog", { name: "Notifications" });
+    await expect(dropdown).toBeVisible();
+
+    const item = dropdown.getByRole("button").filter({
+      hasText: /Results Submitted/i,
+    }).first();
+    await expect(item).toBeVisible({ timeout: 15_000 });
+
+    // clicking the unread item marks it as read and closes the panel
+    await item.click();
+    await expect(dropdown).toBeHidden({ timeout: 15_000 });
+  });
+
   test("admin cannot open teacher-only portal", async ({ page }) => {
     await page.goto("/teacher/dashboard");
     // AuthGuard logs the admin out and bounces to /login

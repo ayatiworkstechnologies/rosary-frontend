@@ -12,7 +12,6 @@ import {
 
 import Link from "next/link";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminParents,
@@ -169,7 +168,6 @@ export default function EditParentLinkPage() {
 
   if (loading) {
     return (
-      <AdminShell>
         <div className="flex min-h-[400px] items-center justify-center">
 
           <RefreshCw
@@ -178,13 +176,11 @@ export default function EditParentLinkPage() {
           />
 
         </div>
-      </AdminShell>
     );
   }
 
   return (
-    <AdminShell>
-
+    <>
       <Link
         href="/admin/parent-linking"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#0075FF]"
@@ -194,7 +190,7 @@ export default function EditParentLinkPage() {
         Back to Parent Linking
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
         Edit Parent Link
       </h1>
 
@@ -344,6 +340,6 @@ export default function EditParentLinkPage() {
 
       </section>
 
-    </AdminShell>
+    </>
   );
 }

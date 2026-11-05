@@ -4,7 +4,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminClasses,
@@ -269,12 +268,11 @@ export default function AdminClassesPage() {
   // =========================================================
 
   return (
-    <AdminShell>
-      {/* HEADER */}
+    <>
       <section className="mb-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+            <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
               Classes
             </h1>
 
@@ -300,7 +298,7 @@ export default function AdminClassesPage() {
             Total Classes
           </p>
 
-          <p className="mt-2 text-2xl font-bold text-gray-900">
+          <p className="mt-2 text-2xl font-bold text-[#0B3A67]">
             {summary.total_classes}
           </p>
         </div>
@@ -625,6 +623,6 @@ export default function AdminClassesPage() {
           </div>
         )}
       </section>
-    </AdminShell>
+    </>
   );
 }

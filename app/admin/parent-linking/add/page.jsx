@@ -11,7 +11,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminParentLink,
@@ -157,8 +156,7 @@ export default function AddParentLinkPage() {
   };
 
   return (
-    <AdminShell>
-
+    <>
       <section className="mb-6">
 
         <Link
@@ -169,7 +167,7 @@ export default function AddParentLinkPage() {
           Back to Parent Linking
         </Link>
 
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+        <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
           Link Parent to Student
         </h1>
 
@@ -194,7 +192,7 @@ export default function AddParentLinkPage() {
             </div>
 
             <div>
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-[#0B3A67]">
                 Parent & Student
               </h2>
 
@@ -387,6 +385,6 @@ export default function AddParentLinkPage() {
 
       </section>
 
-    </AdminShell>
+    </>
   );
 }

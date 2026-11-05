@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoExamSchedule } from "@/components/demo/DemoSections";
+
 import {
   useEffect,
   useMemo,
@@ -15,7 +17,6 @@ import {
   X,
 } from "lucide-react";
 
-import AdminShell from "@/components/admin/AdminShell";
 import api from "@/services/api";
 
 import {
@@ -810,9 +811,8 @@ export default function AdminExamSchedulesPage() {
   // ======================================================
   // RENDER
   // ======================================================
-
   return (
-    <AdminShell>
+    <>
       <div className="mx-auto max-w-[1500px]">
 
         {/* HEADER */}
@@ -821,7 +821,7 @@ export default function AdminExamSchedulesPage() {
 
           <div>
 
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+            <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
               Exam Schedule
             </h1>
 
@@ -1031,7 +1031,7 @@ export default function AdminExamSchedulesPage() {
 
               </div>
 
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-bold text-[#0B3A67]">
                 No schedules found
               </h3>
 
@@ -1108,7 +1108,7 @@ export default function AdminExamSchedulesPage() {
 
                             <div>
 
-                              <p className="text-sm font-semibold text-slate-900">
+                              <p className="text-sm font-semibold text-[#0B3A67]">
                                 {item.exam_name}
                               </p>
 
@@ -1218,6 +1218,10 @@ export default function AdminExamSchedulesPage() {
 
         </div>
 
+        {/* DEMO PREVIEW (dev-only; renders nothing unless
+            NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+        <DemoExamSchedule portal="admin" />
+
       </div>
 
 
@@ -1235,7 +1239,7 @@ export default function AdminExamSchedulesPage() {
 
               <div>
 
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-[#0B3A67]">
                   {editingSchedule
                     ? "Edit Exam Schedule"
                     : "Add Exam Schedule"}
@@ -1522,6 +1526,6 @@ export default function AdminExamSchedulesPage() {
 
       )}
 
-    </AdminShell>
+    </>
   );
 }

@@ -11,7 +11,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminStudent,
@@ -177,7 +176,7 @@ export default function AddAdminStudentPage() {
   };
 
   return (
-    <AdminShell>
+    <>
       <section className="mb-6">
 
         <Link
@@ -189,7 +188,7 @@ export default function AddAdminStudentPage() {
           Back to Students
         </Link>
 
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+        <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
           Add Student
         </h1>
 
@@ -215,7 +214,7 @@ export default function AddAdminStudentPage() {
             </div>
 
             <div>
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-[#0B3A67]">
                 Student Information
               </h2>
 
@@ -448,6 +447,6 @@ export default function AddAdminStudentPage() {
 
         </form>
       </section>
-    </AdminShell>
+    </>
   );
 }

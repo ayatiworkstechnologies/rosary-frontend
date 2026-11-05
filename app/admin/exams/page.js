@@ -26,7 +26,6 @@ import {
   updateAdminExamStatus,
 } from "@/lib/admin-exams";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 
 // ======================================================
@@ -944,7 +943,7 @@ export default function AdminExamsPage() {
   // ======================================================
 
   return (
-    <AdminShell>
+    <>
       <div className="mx-auto max-w-[1500px]">
 
         {/* HEADER */}
@@ -952,7 +951,7 @@ export default function AdminExamsPage() {
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+            <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
               Exams
             </h1>
 
@@ -1111,7 +1110,7 @@ export default function AdminExamsPage() {
 
               </div>
 
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-bold text-[#0B3A67]">
                 No exams found
               </h3>
 
@@ -1221,7 +1220,7 @@ export default function AdminExamsPage() {
 
                                 <div className="min-w-0">
 
-                                  <p className="max-w-[280px] truncate text-sm font-semibold text-slate-900">
+                                  <p className="max-w-[280px] truncate text-sm font-semibold text-[#0B3A67]">
                                     {exam.name}
                                   </p>
 
@@ -1561,7 +1560,7 @@ export default function AdminExamsPage() {
 
               <div>
 
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-[#0B3A67]">
 
                   {editingExam
                     ? "Edit Exam"
@@ -1824,6 +1823,6 @@ export default function AdminExamsPage() {
 
       )}
 
-    </AdminShell>
+    </>
   );
 }

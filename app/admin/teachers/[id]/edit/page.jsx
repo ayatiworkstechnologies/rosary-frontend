@@ -12,7 +12,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminTeacher,
@@ -267,20 +266,17 @@ export default function EditTeacherPage() {
 
   if (loading) {
     return (
-      <AdminShell>
         <div className="flex min-h-[400px] items-center justify-center">
           <RefreshCw
             size={28}
             className="animate-spin text-[#0075FF]"
           />
         </div>
-      </AdminShell>
     );
   }
 
   return (
-    <AdminShell>
-
+    <>
       <Link
         href="/admin/teachers"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#0075FF]"
@@ -290,7 +286,7 @@ export default function EditTeacherPage() {
         Back to Teachers
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-[#0B3A67]">
         Edit Teacher
       </h1>
 
@@ -494,7 +490,7 @@ export default function EditTeacherPage() {
             />
 
             <div>
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-[#0B3A67]">
                 Reset Password
               </h2>
 
@@ -540,7 +536,6 @@ export default function EditTeacherPage() {
         </section>
 
       </div>
-
-    </AdminShell>
+    </>
   );
 }

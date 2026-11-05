@@ -13,7 +13,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   getAdminFee,
@@ -404,7 +403,6 @@ export default function EditAdminFeePage() {
 
   if (loading) {
     return (
-      <AdminShell>
 
         <div className="flex min-h-[450px] items-center justify-center">
 
@@ -423,16 +421,12 @@ export default function EditAdminFeePage() {
 
         </div>
 
-      </AdminShell>
     );
   }
 
 
   return (
-    <AdminShell>
-
-      {/* BACK */}
-
+    <>
       <Link
         href="/admin/fees"
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 transition hover:text-[#0075FF]"
@@ -447,7 +441,7 @@ export default function EditAdminFeePage() {
 
       <section className="mb-6">
 
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+        <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
           Edit Student Fee
         </h1>
 
@@ -478,7 +472,7 @@ export default function EditAdminFeePage() {
 
             <div>
 
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-[#0B3A67]">
                 Current Payment
               </h2>
 
@@ -586,7 +580,7 @@ export default function EditAdminFeePage() {
 
             <div>
 
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-[#0B3A67]">
                 Fee Information
               </h2>
 
@@ -641,7 +635,7 @@ export default function EditAdminFeePage() {
                   className="text-[#0075FF]"
                 />
 
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-[#0B3A67]">
                   Student
                 </h3>
 
@@ -704,7 +698,7 @@ export default function EditAdminFeePage() {
 
                 <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
 
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-[#0B3A67]">
                     {
                       selectedStudent.full_name
                     }
@@ -753,7 +747,7 @@ export default function EditAdminFeePage() {
                   className="text-[#0075FF]"
                 />
 
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-[#0B3A67]">
                   Fee Details
                 </h3>
 
@@ -1009,6 +1003,6 @@ export default function EditAdminFeePage() {
 
       </div>
 
-    </AdminShell>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { DemoHomework } from "@/components/demo/DemoSections";
 import { useSearchParams } from "next/navigation";
 import {
   useEffect,
@@ -418,6 +419,10 @@ export default function TeacherHomeworkPage() {
         </button>
 
       </div>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoHomework portal="teacher" />
 
 
       {/* =========================================

@@ -10,7 +10,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminTeacher,
@@ -173,8 +172,7 @@ export default function AddTeacherPage() {
     "h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none transition focus:border-[#0075FF]";
 
   return (
-    <AdminShell>
-
+    <>
       <section className="mb-6">
 
         <Link
@@ -186,7 +184,7 @@ export default function AddTeacherPage() {
           Back to Teachers
         </Link>
 
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+        <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
           Add Teacher
         </h1>
 
@@ -209,7 +207,7 @@ export default function AddTeacherPage() {
           </div>
 
           <div>
-            <h2 className="font-semibold text-gray-900">
+            <h2 className="font-semibold text-[#0B3A67]">
               Teacher Information
             </h2>
 
@@ -448,7 +446,6 @@ export default function AddTeacherPage() {
         </div>
 
       </form>
-
-    </AdminShell>
+    </>
   );
 }

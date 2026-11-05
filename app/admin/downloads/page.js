@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoDownloads } from "@/components/demo/DemoSections";
+
 import {
   useEffect,
   useMemo,
@@ -17,7 +19,6 @@ import {
   X,
 } from "lucide-react";
 
-import AdminShell from "@/components/admin/AdminShell";
 
 import {
   createAdminDownload,
@@ -1127,8 +1128,7 @@ export default function AdminDownloadsPage() {
   // ======================================================
 
   return (
-    <AdminShell>
-
+    <>
       <div className="mx-auto max-w-[1500px]">
 
 
@@ -1138,7 +1138,7 @@ export default function AdminDownloadsPage() {
 
           <div>
 
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+            <h1 className="text-2xl font-bold text-[#0B3A67] md:text-3xl">
               Downloads & Forms
             </h1>
 
@@ -1351,7 +1351,7 @@ export default function AdminDownloadsPage() {
 
               </div>
 
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-bold text-[#0B3A67]">
                 No forms found
               </h3>
 
@@ -1446,7 +1446,7 @@ export default function AdminDownloadsPage() {
 
                             <div className="min-w-0">
 
-                              <p className="max-w-[280px] truncate text-sm font-semibold text-slate-900">
+                              <p className="max-w-[280px] truncate text-sm font-semibold text-[#0B3A67]">
                                 {
                                   item.title
                                 }
@@ -1637,6 +1637,10 @@ export default function AdminDownloadsPage() {
 
         </div>
 
+        {/* DEMO PREVIEW (dev-only; renders nothing unless
+            NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+        <DemoDownloads />
+
       </div>
 
 
@@ -1655,7 +1659,7 @@ export default function AdminDownloadsPage() {
 
               <div>
 
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-[#0B3A67]">
 
                   {editingItem
                     ? "Edit Form"
@@ -2126,6 +2130,6 @@ export default function AdminDownloadsPage() {
 
       )}
 
-    </AdminShell>
+    </>
   );
 }

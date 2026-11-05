@@ -1,5 +1,7 @@
 "use client";
 
+import { DemoHomework } from "@/components/demo/DemoSections";
+
 import {
   useEffect,
   useMemo,
@@ -642,6 +644,10 @@ export default function ParentHomeworkPage() {
           homework and assignments.
         </p>
       </div>
+
+      {/* DEMO PREVIEW (dev-only; renders nothing unless
+          NEXT_PUBLIC_DEMO_PREVIEW=true at build time) */}
+      <DemoHomework portal="parent" />
 
       {/* CHILD SELECTOR */}
 

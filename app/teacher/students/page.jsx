@@ -664,6 +664,7 @@ export default function TeacherStudentsPage() {
                         <button
                           type="button"
                           title="View student"
+                          aria-label="View student"
                           className="
                             inline-flex
                             h-9
@@ -722,6 +723,7 @@ export default function TeacherStudentsPage() {
                     <button
                       type="button"
                       title="View student"
+                      aria-label="View student"
                       className="
                         flex
                         h-9
