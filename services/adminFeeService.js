@@ -96,6 +96,20 @@ export async function getAdminFees(
     );
   }
 
+  if (params.page) {
+    searchParams.set(
+      "page",
+      String(params.page)
+    );
+  }
+
+  if (params.page_size) {
+    searchParams.set(
+      "page_size",
+      String(params.page_size)
+    );
+  }
+
   if (
     params.is_active !== undefined &&
     params.is_active !== null &&

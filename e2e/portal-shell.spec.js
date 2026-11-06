@@ -47,6 +47,10 @@ for (const portal of portals) {
       await expect(link).toBeVisible();
     }
 
+    const activeLink = navigation.locator('[aria-current="page"]');
+    await expect(activeLink).toBeVisible();
+    await expect(activeLink).toHaveCSS("color", "rgb(0, 117, 255)");
+
     await expect
       .poll(async () => (await page.locator("main").innerText()).trim().length)
       .toBeGreaterThan(20);

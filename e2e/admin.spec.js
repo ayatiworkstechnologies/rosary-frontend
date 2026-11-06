@@ -88,11 +88,27 @@ test.describe("Admin Portal", () => {
     await expect(page.getByText(/TESTADM1|Test Student One/i).first()).toBeVisible();
   });
 
-  test("fees: page loads (data or empty state)", async ({ page }) => {
+  test("fees: page loads with server pagination", async ({ page }) => {
     await page.goto("/admin/fees");
     await expect(
       page.getByRole("table").or(page.getByText(/no fee records found/i)).first()
     ).toBeVisible({ timeout: 15_000 });
+
+    const rowsPerPage = page.getByLabel("Rows per page");
+    await expect(rowsPerPage).toBeVisible();
+    await expect(page.getByText(/Showing 1-\d+ of \d+ records/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
+
+    const pageSizeRequest = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        url.pathname.endsWith("/api/v1/admin/fees") &&
+        url.searchParams.get("page_size") === "10" &&
+        response.ok()
+      );
+    });
+    await rowsPerPage.selectOption("10");
+    await pageSizeRequest;
   });
 
   test("exams: server-side pagination + publish/unpublish results", async ({ page, request }) => {

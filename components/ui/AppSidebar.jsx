@@ -86,10 +86,11 @@ export default function AppSidebar({
                   className={cn(
                     "portal-nav-link flex min-h-[30px] max-h-[42px] flex-1 items-center gap-3 rounded-xl px-3.5 text-[13px] font-semibold transition-all duration-200",
                     active
-                      ? "bg-white text-[#10233F] shadow-[0_8px_20px_rgba(0,0,0,0.14)]"
+                      ? "bg-white text-[#0075FF] shadow-[0_8px_20px_rgba(0,0,0,0.14)]"
                       : "text-white/78 hover:bg-white/12 hover:text-white"
                   )}
                   aria-current={active ? "page" : undefined}
+                  style={active ? { color: "#0075FF" } : undefined}
                 >
                   {Icon && (
                     <span

@@ -84,6 +84,28 @@ export default function AdminFeesPage() {
   const [search, setSearch] =
     useState("");
 
+  const [debouncedSearch, setDebouncedSearch] =
+    useState("");
+
+  const [page, setPage] =
+    useState(1);
+
+  const [pageSize, setPageSize] =
+    useState(20);
+
+  const [refreshKey, setRefreshKey] =
+    useState(0);
+
+  const [pagination, setPagination] =
+    useState({
+      page: 1,
+      page_size: 20,
+      total: 0,
+      total_pages: 0,
+      has_next: false,
+      has_previous: false,
+    });
+
   const [
     paymentStatusFilter,
     setPaymentStatusFilter,
@@ -101,16 +123,44 @@ export default function AdminFeesPage() {
 
 
   // =====================================================
-  // INITIAL LOAD
+  // SEARCH DEBOUNCE
+  // =====================================================
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+
+  // =====================================================
+  // LOAD PAGINATED FEES
   // =====================================================
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadInitialData() {
+    async function loadFees() {
       try {
+        setLoading(true);
+        setError("");
+
         const response =
-          await getAdminFees();
+          await getAdminFees({
+            search: debouncedSearch,
+            payment_status:
+              paymentStatusFilter,
+            is_active:
+              activeStatusFilter === ""
+                ? undefined
+                : activeStatusFilter ===
+                    "active",
+            page,
+            page_size: pageSize,
+          });
 
         if (cancelled) {
           return;
@@ -121,6 +171,43 @@ export default function AdminFeesPage() {
             ? response.data
             : []
         );
+
+        const nextPagination =
+          response?.pagination || {};
+
+        setPagination({
+          page:
+            Number(nextPagination.page) ||
+            page,
+          page_size:
+            Number(
+              nextPagination.page_size
+            ) || pageSize,
+          total:
+            Number(nextPagination.total) ||
+            0,
+          total_pages:
+            Number(
+              nextPagination.total_pages
+            ) || 0,
+          has_next:
+            Boolean(
+              nextPagination.has_next
+            ),
+          has_previous:
+            Boolean(
+              nextPagination.has_previous
+            ),
+        });
+
+        if (
+          nextPagination.total_pages > 0 &&
+          page > nextPagination.total_pages
+        ) {
+          setPage(
+            nextPagination.total_pages
+          );
+        }
       } catch (error) {
         if (cancelled) {
           return;
@@ -142,96 +229,30 @@ export default function AdminFeesPage() {
       }
     }
 
-    loadInitialData();
+    loadFees();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [
+    activeStatusFilter,
+    debouncedSearch,
+    page,
+    pageSize,
+    paymentStatusFilter,
+    refreshKey,
+  ]);
 
 
   // =====================================================
   // REFRESH
   // =====================================================
 
-  const handleRefresh = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response =
-        await getAdminFees();
-
-      setFees(
-        Array.isArray(response?.data)
-          ? response.data
-          : []
-      );
-    } catch (error) {
-      setError(
-        error?.message ||
-          "Unable to load fees."
-      );
-    } finally {
-      setLoading(false);
-    }
+  const handleRefresh = () => {
+    setRefreshKey((current) =>
+      current + 1
+    );
   };
-
-
-  // =====================================================
-  // FILTER
-  // =====================================================
-
-  const filteredFees =
-    useMemo(() => {
-      const keyword = search
-        .trim()
-        .toLowerCase();
-
-      return fees.filter(
-        (fee) => {
-          const student =
-            fee.student || {};
-
-          const text = `
-            ${student.full_name || ""}
-            ${student.admission_no || ""}
-            ${fee.fee_title || ""}
-            ${fee.fee_type || ""}
-            ${fee.academic_year || ""}
-            ${fee.receipt_no || ""}
-          `.toLowerCase();
-
-          const matchesSearch =
-            !keyword ||
-            text.includes(keyword);
-
-          const matchesPayment =
-            !paymentStatusFilter ||
-            fee.payment_status ===
-              paymentStatusFilter;
-
-          const matchesActive =
-            activeStatusFilter === ""
-              ? true
-              : activeStatusFilter ===
-                  "active"
-              ? fee.is_active
-              : !fee.is_active;
-
-          return (
-            matchesSearch &&
-            matchesPayment &&
-            matchesActive
-          );
-        }
-      );
-    }, [
-      fees,
-      search,
-      paymentStatusFilter,
-      activeStatusFilter,
-    ]);
 
 
   // =====================================================
@@ -267,6 +288,22 @@ export default function AdminFeesPage() {
         }
       );
     }, [fees]);
+
+  const rangeStart =
+    pagination.total === 0
+      ? 0
+      : (pagination.page - 1) *
+          pagination.page_size +
+        1;
+
+  const rangeEnd =
+    pagination.total === 0
+      ? 0
+      : Math.min(
+          pagination.page *
+            pagination.page_size,
+          pagination.total
+        );
 
 
   // =====================================================
@@ -372,7 +409,7 @@ export default function AdminFeesPage() {
               </p>
 
               <p className="mt-2 text-2xl font-bold text-[#0B3A67]">
-                {fees.length}
+                {pagination.total}
               </p>
 
             </div>
@@ -395,7 +432,7 @@ export default function AdminFeesPage() {
             <div>
 
               <p className="text-sm text-gray-500">
-                Total Fee
+                Page Total
               </p>
 
               <p className="mt-2 text-xl font-bold text-[#0B3A67]">
@@ -424,7 +461,7 @@ export default function AdminFeesPage() {
             <div>
 
               <p className="text-sm text-gray-500">
-                Paid
+                Page Paid
               </p>
 
               <p className="mt-2 text-xl font-bold text-green-600">
@@ -451,7 +488,7 @@ export default function AdminFeesPage() {
             <div>
 
               <p className="text-sm text-gray-500">
-                Balance
+                Page Balance
               </p>
 
               <p className="mt-2 text-xl font-bold text-orange-600">
@@ -507,9 +544,12 @@ export default function AdminFeesPage() {
               paymentStatusFilter
             }
             onChange={(e) =>
-              setPaymentStatusFilter(
-                e.target.value
-              )
+              {
+                setPaymentStatusFilter(
+                  e.target.value
+                );
+                setPage(1);
+              }
             }
             className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#0075FF]"
           >
@@ -538,9 +578,12 @@ export default function AdminFeesPage() {
               activeStatusFilter
             }
             onChange={(e) =>
-              setActiveStatusFilter(
-                e.target.value
-              )
+              {
+                setActiveStatusFilter(
+                  e.target.value
+                );
+                setPage(1);
+              }
             }
             className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#0075FF]"
           >
@@ -682,7 +725,7 @@ export default function AdminFeesPage() {
 
                 </tr>
 
-              ) : filteredFees.length ===
+              ) : fees.length ===
                 0 ? (
 
                 <tr>
@@ -712,7 +755,7 @@ export default function AdminFeesPage() {
 
               ) : (
 
-                filteredFees.map(
+                fees.map(
                   (fee) => (
 
                     <tr
@@ -952,6 +995,56 @@ export default function AdminFeesPage() {
           </table>
 
         </div>
+
+        {!loading && pagination.total > 0 && (
+          <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-500">
+              Showing {rangeStart}-{rangeEnd} of {pagination.total} records
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-2 text-sm text-gray-500">
+                Rows
+                <select
+                  aria-label="Rows per page"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageSize(Number(event.target.value));
+                    setPage(1);
+                  }}
+                  className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#0075FF]"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={!pagination.has_previous || loading}
+                className="h-9 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous
+              </button>
+
+              <span className="min-w-24 text-center text-sm font-semibold text-[#0B3A67]">
+                Page {pagination.page} of {Math.max(pagination.total_pages, 1)}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setPage((current) => current + 1)}
+                disabled={!pagination.has_next || loading}
+                className="h-9 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
       </section>
 
