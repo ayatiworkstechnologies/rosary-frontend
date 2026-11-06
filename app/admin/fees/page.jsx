@@ -305,6 +305,32 @@ export default function AdminFeesPage() {
           pagination.total
         );
 
+  const pageNumbers =
+    useMemo(() => {
+      const totalPages = Math.max(
+        pagination.total_pages,
+        1
+      );
+      let start = Math.max(
+        1,
+        pagination.page - 2
+      );
+      let end = Math.min(
+        totalPages,
+        start + 4
+      );
+
+      start = Math.max(1, end - 4);
+
+      return Array.from(
+        { length: end - start + 1 },
+        (_, index) => start + index
+      );
+    }, [
+      pagination.page,
+      pagination.total_pages,
+    ]);
+
 
   // =====================================================
   // STATUS
@@ -652,6 +678,77 @@ export default function AdminFeesPage() {
 
       <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
 
+        {!loading && pagination.total > 0 && (
+          <div className="sticky top-[76px] z-20 flex flex-col gap-3 border-b border-gray-100 bg-white/95 px-5 py-4 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-500">
+              Showing {rangeStart}-{rangeEnd} of {pagination.total} records
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="mr-1 flex items-center gap-2 text-sm text-gray-500">
+                Rows
+                <select
+                  aria-label="Rows per page"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageSize(Number(event.target.value));
+                    setPage(1);
+                  }}
+                  className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#0075FF]"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={!pagination.has_previous || loading}
+                className="h-9 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous
+              </button>
+
+              {pageNumbers.map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  aria-label={`Go to page ${pageNumber}`}
+                  aria-current={
+                    pageNumber === pagination.page
+                      ? "page"
+                      : undefined
+                  }
+                  onClick={() => setPage(pageNumber)}
+                  className={`h-9 min-w-9 rounded-lg border px-3 text-sm font-semibold transition ${
+                    pageNumber === pagination.page
+                      ? "border-[#0075FF] bg-[#0075FF] text-white"
+                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setPage((current) => current + 1)}
+                disabled={!pagination.has_next || loading}
+                className="h-9 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next
+              </button>
+
+              <span className="ml-1 text-sm font-semibold text-[#0B3A67]">
+                Page {pagination.page} of {Math.max(pagination.total_pages, 1)}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
 
           <table className="w-full min-w-[1300px]">
@@ -995,56 +1092,6 @@ export default function AdminFeesPage() {
           </table>
 
         </div>
-
-        {!loading && pagination.total > 0 && (
-          <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-gray-500">
-              Showing {rangeStart}-{rangeEnd} of {pagination.total} records
-            </p>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 text-sm text-gray-500">
-                Rows
-                <select
-                  aria-label="Rows per page"
-                  value={pageSize}
-                  onChange={(event) => {
-                    setPageSize(Number(event.target.value));
-                    setPage(1);
-                  }}
-                  className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#0075FF]"
-                >
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={!pagination.has_previous || loading}
-                className="h-9 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Previous
-              </button>
-
-              <span className="min-w-24 text-center text-sm font-semibold text-[#0B3A67]">
-                Page {pagination.page} of {Math.max(pagination.total_pages, 1)}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setPage((current) => current + 1)}
-                disabled={!pagination.has_next || loading}
-                className="h-9 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
 
       </section>
 

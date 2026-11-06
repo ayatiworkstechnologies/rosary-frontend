@@ -96,7 +96,13 @@ test.describe("Admin Portal", () => {
 
     const rowsPerPage = page.getByLabel("Rows per page");
     await expect(rowsPerPage).toBeVisible();
-    await expect(page.getByText(/Showing 1-\d+ of \d+ records/i)).toBeVisible();
+    const paginationSummary = page.getByText(/Showing 1-\d+ of \d+ records/i);
+    await expect(paginationSummary).toBeVisible();
+    await expect(paginationSummary.locator("..")).toHaveCSS("position", "sticky");
+    await expect(page.getByLabel("Go to page 1")).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
     await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
 
     const pageSizeRequest = page.waitForResponse((response) => {
