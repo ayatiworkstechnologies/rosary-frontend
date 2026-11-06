@@ -169,6 +169,27 @@ test.describe("Admin Portal", () => {
     });
   });
 
+  test("notifications: sibling student targeting previews one email", async ({ page }) => {
+    await page.goto("/admin/notifications");
+    await page.getByRole("button", { name: "Selected Students" }).click();
+
+    await page.getByPlaceholder("Student name or admission number").fill("TESTADM");
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+
+    for (const admission of ["TESTADM1", "TESTADM2"]) {
+      const row = page
+        .getByText(admission, { exact: false })
+        .locator("xpath=ancestor::label");
+      await row.getByRole("checkbox").check();
+    }
+
+    await page.getByRole("button", { name: "Preview Recipients" }).click();
+    await expect(page.getByText("Linked parents")).toBeVisible();
+    await expect(page.getByText("Email eligible")).toBeVisible();
+    await expect(page.getByText("Linked parents").locator("..")).toContainText("1");
+    await expect(page.getByText("Email eligible").locator("..")).toContainText("1");
+  });
+
   test("notification bell: live inbox with result-submission events", async ({ page, request }) => {
     // A teacher result save guarantees every admin receives a
     // RESULT_SUBMISSION notification (backend tests cover the
