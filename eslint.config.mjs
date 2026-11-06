@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Playwright and other generated artifacts. Scanning these can also
+    // crash when Playwright removes them mid-run.
+    "node_modules/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 

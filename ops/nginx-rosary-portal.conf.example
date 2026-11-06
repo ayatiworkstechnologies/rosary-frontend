@@ -1,0 +1,52 @@
+# =====================================================================
+# Rosary Portal frontend -- cloud2 nginx server block
+#
+# STATUS: TEMPLATE. Do NOT install without reviewing the live nginx
+# tree (sudo access is currently unavailable to devteam) and without
+# deployment approval. Apply with:
+#   sudo cp nginx-rosary-portal.conf /etc/nginx/sites-available/rosary-portal
+#   sudo ln -s /etc/nginx/sites-available/rosary-portal /etc/nginx/sites-enabled/
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# Serve the portal frontend (PM2 rosary-frontend on 127.0.0.1:3100) and
+# keep the API on its existing TLS host (api.rosarychennai.com ->
+# 127.0.0.1:8016). The portal calls /backend/* which must reach the API
+# server block as /... so the exact Location below mirrors the Vercel
+# rewrite (1:1 path to 127.0.0.1:8016).
+#
+# CERT: re-use the existing certificate pair from api.rosarychennai.com
+# (or issue a dedicated cert for the portal hostname via certbot).
+# =====================================================================
+
+server {
+    listen 80;
+    server_name portal.rosarychennai.com;   # confirm DNS record first
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name portal.rosarychennai.com;
+
+    # Re-use existing cert or replace with a dedicated one after issuance.
+    ssl_certificate     /etc/letsencrypt/live/api.rosarychennai.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.rosarychennai.com/privkey.pem;
+
+    # Basic security headers.
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-Content-Type-Options nosniff;
+
+    client_max_body_size 25m;
+
+    location / {
+        proxy_pass http://127.0.0.1:3100;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 120s;
+    }
+}
