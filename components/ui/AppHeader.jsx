@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { cn } from "@/lib/design-tokens";
 import NotificationDropdown from "@/components/ui/NotificationDropdown";
+import { getPortalTheme } from "@/lib/portal-theme";
 
 const portalLabels = {
   admin: "Admin Portal",
@@ -20,6 +22,7 @@ export default function AppHeader({
   onLogout,
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const theme = getPortalTheme(portal);
 
   const initials = user?.name
     ?.split(" ")
@@ -32,8 +35,9 @@ export default function AppHeader({
   return (
     <header
       className={cn(
-        "fixed left-0 right-0 top-0 z-40 h-[76px] border-b border-[#E5EDF5] bg-white lg:left-[260px]"
+        "fixed left-0 right-0 top-0 z-40 h-[76px] border-b bg-white/92 shadow-[0_8px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl lg:left-[272px]"
       )}
+      style={{ borderColor: theme.border }}
     >
       <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-5 md:px-6 lg:px-7 xl:px-8">
         {/* Left */}
@@ -47,18 +51,33 @@ export default function AppHeader({
             <Menu size={21} />
           </button>
 
-          <div className="hidden min-w-0 sm:block">
-            <h2 className="truncate text-lg font-bold text-[#0B3A67]">
-              {title || portalLabels[portal] || "Portal"}
-            </h2>
-            {subtitle && (
-              <p className="truncate text-xs text-[#64748B]">{subtitle}</p>
-            )}
+          <div className="relative h-10 w-[108px] shrink-0 sm:hidden">
+            <Image
+              src="/logo/rosary-logo.png"
+              alt="Rosary School"
+              fill
+              sizes="108px"
+              className="object-contain"
+              priority
+            />
           </div>
 
-          <span className="min-w-0 truncate text-base font-bold text-[#0B3A67] sm:hidden">
-            {portalLabels[portal] || "Portal"}
-          </span>
+          <div className="hidden min-w-0 sm:block">
+            <div className="flex items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_0_5px_var(--portal-accent-soft)]"
+                style={{ backgroundColor: theme.accent }}
+              />
+              <h2 className="truncate text-lg font-extrabold tracking-[-0.01em] text-[#10233F]">
+                {title || portalLabels[portal] || "Portal"}
+              </h2>
+            </div>
+            {subtitle && (
+              <p className="mt-0.5 truncate pl-[18px] text-xs font-medium text-[#64748B]">
+                {subtitle}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Right */}
@@ -83,19 +102,26 @@ export default function AppHeader({
             <button
               type="button"
               onClick={() => setProfileOpen((previous) => !previous)}
-              className="flex items-center gap-3 rounded-xl px-1.5 py-1 transition hover:bg-[#F7F9FC]"
+              className="flex items-center gap-3 rounded-2xl border px-1.5 py-1 transition hover:bg-white"
+              style={{
+                borderColor: theme.border,
+                backgroundColor: theme.accentSoft,
+              }}
               aria-expanded={profileOpen}
               aria-haspopup="true"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0075FF] text-sm font-bold text-white">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold text-white shadow-sm"
+                style={{ backgroundColor: theme.accent }}
+              >
                 {initials}
               </div>
               <div className="hidden text-left lg:block">
-                <p className="text-sm font-semibold leading-5 text-[#0B3A67]">
+                <p className="text-sm font-bold leading-5 text-[#10233F]">
                   {user?.name || "User"}
                 </p>
                 <p className="text-xs text-[#64748B]">
-                  {user?.role || "User"}
+                  {theme.shortLabel}
                 </p>
               </div>
               <ChevronDown

@@ -1,0 +1,78 @@
+# =====================================================================
+# Rosary Portal frontend -- cloud2 nginx server block
+#
+# STATUS: TEMPLATE. Do NOT install without reviewing the live nginx
+# tree (sudo access is currently unavailable to devteam) and without
+# deployment approval. Apply with:
+#   sudo cp nginx-rosary-portal.conf /etc/nginx/sites-available/rosary-portal
+#   sudo ln -s /etc/nginx/sites-available/rosary-portal /etc/nginx/sites-enabled/
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# Serve the portal frontend (PM2 rosary-frontend on 127.0.0.1:3100) and
+# keep the API on its existing TLS host (api.rosarychennai.com ->
+# 127.0.0.1:8016). The portal calls /backend/* which must reach the API
+# server block as /... so the exact Location below mirrors the Vercel
+# rewrite (1:1 path to 127.0.0.1:8016).
+#
+# CERT: the api.rosarychennai.com certificate does NOT cover a different
+# portal hostname unless its SAN list does. Issue a dedicated certificate
+# after DNS is live, then update the two ssl_ paths below:
+#   sudo certbot --nginx -d portal.rosarychennai.com   # or install manually
+# =====================================================================
+
+# TEMPORARY pre-HTTPS view (no cert): enable ONLY until the dedicated
+# certificate exists. DELETE this whole block when activating the final
+# configuration below -- two blocks with the same server_name:80 would
+# conflict (nginx keeps one and ignores the other).
+server {
+    listen 80;
+    server_name portal.rosarychennai.com;   # confirm DNS record first
+
+    client_max_body_size 25m;
+
+    location / {
+        proxy_pass http://127.0.0.1:3100;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 120s;
+    }
+}
+
+# FINAL configuration once the certificate is issued:
+server {
+    listen 80;
+    server_name portal.rosarychennai.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name portal.rosarychennai.com;
+
+    # Replace with the dedicated certificate issued via certbot above.
+    ssl_certificate     /etc/letsencrypt/live/portal.rosarychennai.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/portal.rosarychennai.com/privkey.pem;
+
+    # Basic security headers.
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-Content-Type-Options nosniff;
+
+    client_max_body_size 25m;
+
+    location / {
+        proxy_pass http://127.0.0.1:3100;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 120s;
+    }
+}
