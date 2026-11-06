@@ -60,13 +60,13 @@ do_rollback() {
   [ -n "$previous" ] || die "no previous release recorded for rollback"
   [ -d "$previous" ] || die "previous release missing: $previous"
 
-  kill $(cat "$previous/pm2.pid" 2>/dev/null) >/dev/null 2>&1 || true
   pm2 delete "$PM2_NAME" >/dev/null 2>&1 || true
 
   ln -sfn "$previous" "$APP_DIR"
-  if [ -f "$previous/pm2.pid" ]; then
-    pm2 start "$previous/pm2.pid" > /dev/null 2>&1 || true
-  fi
+  pm2 start npm --name "$PM2_NAME" --cwd "$APP_DIR" -- \
+    run start -- --port "$PORT" --hostname "$HOSTLISTEN" \
+    || die "pm2 start failed during rollback"
+  pm2 pid "$PM2_NAME" > "$APP_DIR/pm2.pid"
   pm2 save
   verify_health || die "rollback failed health check"
   log "rollback complete: $previous"
@@ -140,16 +140,16 @@ rsync -a --link-dest="$REPO_DIR/node_modules" "$REPO_DIR/node_modules/" "$RELEAS
 printf '%s\n' "$SHA" > "$RELEASE_DIR/RELEASE_HASH"
 cp /tmp/rosary-frontend-boottest.log "$RELEASE_DIR/boot-test.log" 2>/dev/null || true
 
-# 5. Cutover: stop the old process only after the new build is verified.
-kill "$(cat "$APP_DIR/pm2.pid" 2>/dev/null)" >/dev/null 2>&1 || true
+# 5. Cutover: swap the release only after the new build is verified
+#    (the boot-test in step 3 proved the build is servable).
 pm2 delete "$PM2_NAME" >/dev/null 2>&1 || true
 
 ln -sfn "$RELEASE_DIR" "$APP_DIR"
 pm2 start npm --name "$PM2_NAME" --cwd "$APP_DIR" -- \
   run start -- --port "$PORT" --hostname "$HOSTLISTEN" \
   || die "pm2 start failed"
-pm2 save >> "$APP_DIR/pm2.save.log" 2>&1 || true
-pgrep -f "next.*$PORT" > /dev/null 2>&1 && cat /proc/$(pgrep -f "next.*$PORT" | head -1)/stat | awk '{print $1}' > "$APP_DIR/pm2.pid" || true
+pm2 pid "$PM2_NAME" > "$APP_DIR/pm2.pid"
+pm2 save
 
 # 6. Verify the new release before declaring success.
 for i in $(seq 1 30); do
