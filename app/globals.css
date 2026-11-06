@@ -34,6 +34,71 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.portal-canvas {
+  background: var(--portal-surface, var(--background));
+}
+
+.portal-content-layer {
+  background:
+    radial-gradient(
+      circle at 92% 4%,
+      color-mix(in srgb, var(--portal-accent) 13%, transparent),
+      transparent 24rem
+    ),
+    radial-gradient(
+      circle at 8% 92%,
+      color-mix(in srgb, var(--portal-accent) 8%, transparent),
+      transparent 28rem
+    ),
+    linear-gradient(180deg, var(--portal-surface) 0%, #ffffff 150%);
+}
+
+.portal-content-layer :is(h1, h2, h3) {
+  text-wrap: balance;
+}
+
+@media (max-height: 640px) {
+  .portal-sidebar-brand {
+    height: 76px;
+    padding-bottom: 0.35rem;
+    padding-top: 0.35rem;
+  }
+
+  .portal-sidebar-brand > div > div {
+    height: 44px;
+  }
+
+  .portal-sidebar-brand p {
+    display: none;
+  }
+
+  .portal-nav-link {
+    min-height: 25px;
+    font-size: 0.72rem;
+  }
+
+  .portal-nav-link > span:first-child {
+    height: 1.45rem;
+    width: 1.45rem;
+  }
+
+  .portal-sidebar-footer {
+    padding: 0.25rem 0.625rem;
+  }
+}
+
+.portal-content-layer :is(input, select, textarea):focus-visible,
+.portal-canvas :is(button, a):focus-visible {
+  outline: 3px solid
+    color-mix(in srgb, var(--portal-accent) 35%, transparent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--portal-accent-soft, #dbeafe);
+  color: #10233f;
+}
+
 button,
 input,
 select,

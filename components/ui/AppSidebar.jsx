@@ -5,29 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X, LogOut } from "lucide-react";
 import { cn } from "@/lib/design-tokens";
-
-// One consistent premium tone across every portal: deep navy surface
-// with the primary blue (#0075FF) as the active-item highlight.
-const portalTone = {
-  admin: {
-    bg: "bg-[#0B3A67]",
-    activeBg: "bg-[#0075FF]",
-    textMuted: "text-white/60",
-    label: "Admin Portal",
-  },
-  teacher: {
-    bg: "bg-[#0B3A67]",
-    activeBg: "bg-[#0075FF]",
-    textMuted: "text-white/60",
-    label: "Teacher Portal",
-  },
-  parent: {
-    bg: "bg-[#0B3A67]",
-    activeBg: "bg-[#0075FF]",
-    textMuted: "text-white/60",
-    label: "Parent Portal",
-  },
-};
+import { getPortalTheme } from "@/lib/portal-theme";
 
 export default function AppSidebar({
   portal = "admin",
@@ -35,10 +13,11 @@ export default function AppSidebar({
   open = false,
   onClose,
   onLogout,
-  width = 260,
+  user,
+  width = 272,
 }) {
   const pathname = usePathname();
-  const tone = portalTone[portal] || portalTone.admin;
+  const theme = getPortalTheme(portal);
 
   return (
     <>
@@ -52,39 +31,32 @@ export default function AppSidebar({
       )}
 
       <aside
-        style={{ width }}
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-screen flex-col text-white transition-transform duration-300 ease-in-out",
-          tone.bg,
+          "fixed left-0 top-0 z-50 flex h-dvh flex-col overflow-hidden text-white shadow-[16px_0_45px_rgba(15,23,42,0.14)] transition-transform duration-300 ease-in-out",
           open ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0"
         )}
+        style={{
+          width,
+          background: `linear-gradient(165deg, ${theme.sidebarStart} 0%, ${theme.sidebarEnd} 100%)`,
+        }}
       >
         {/* Brand */}
-        <div className="flex h-[76px] shrink-0 items-center justify-between border-b border-white/10 px-5">
-          <div className="flex items-center gap-3">
-            <div className="relative h-11 w-11">
+        <div className="portal-sidebar-brand flex h-[104px] shrink-0 items-center gap-2 border-b border-white/10 px-4 py-3 max-[700px]:h-[88px] max-[700px]:py-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <div className="flex h-[58px] items-center rounded-2xl bg-white px-3 shadow-[0_10px_24px_rgba(0,0,0,0.14)] max-[700px]:h-[50px]">
               <Image
                 src="/logo/rosary-logo.png"
-                alt="Rosary School"
-                fill
-                className="object-contain"
+                alt="Rosary Matriculation Higher Secondary School"
+                width={220}
+                height={81}
+                className="h-full w-full object-contain"
                 priority
               />
             </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-[20px] font-bold leading-none text-white">
-                Rosary
-              </h1>
-              <p
-                className={cn(
-                  "mt-1 truncate text-[11px] font-medium",
-                  tone.textMuted
-                )}
-              >
-                {tone.label}
-              </p>
-            </div>
+            <p className="truncate px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/75">
+              {theme.label}
+            </p>
           </div>
 
           <button
@@ -98,8 +70,8 @@ export default function AppSidebar({
         </div>
 
         {/* Navigation */}
-        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
-          <div className="space-y-1">
+        <nav className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-2">
+          <div className="flex min-h-0 flex-1 flex-col">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active =
@@ -112,14 +84,24 @@ export default function AppSidebar({
                   href={item.href}
                   onClick={onClose}
                   className={cn(
-                    "flex h-[46px] items-center gap-3 rounded-xl px-4 text-[15px] font-medium transition-all duration-200",
+                    "portal-nav-link flex min-h-[30px] max-h-[42px] flex-1 items-center gap-3 rounded-xl px-3.5 text-[13px] font-semibold transition-all duration-200",
                     active
-                      ? cn("shadow-sm", tone.activeBg, "text-white")
-                      : cn("hover:bg-white/10", tone.textMuted, "hover:text-white")
+                      ? "bg-white text-[#10233F] shadow-[0_8px_20px_rgba(0,0,0,0.14)]"
+                      : "text-white/78 hover:bg-white/12 hover:text-white"
                   )}
                   aria-current={active ? "page" : undefined}
                 >
-                  {Icon && <Icon size={20} strokeWidth={2} className="shrink-0" />}
+                  {Icon && (
+                    <span
+                      className={cn(
+                        "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+                        active ? "text-white" : "bg-white/10 text-white"
+                      )}
+                      style={active ? { backgroundColor: theme.accent } : undefined}
+                    >
+                      <Icon size={16} strokeWidth={2.2} />
+                    </span>
+                  )}
                   <span className="truncate">{item.label}</span>
                   {item.badge && (
                     <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#DC2626] px-1 text-[10px] font-bold text-white">
@@ -133,14 +115,18 @@ export default function AppSidebar({
         </nav>
 
         {/* Footer / Logout */}
-        <div className="shrink-0 border-t border-white/10 p-3">
+        <div className="portal-sidebar-footer shrink-0 border-t border-white/10 bg-black/10 p-2.5">
           <button
             type="button"
             onClick={onLogout}
-            className="flex h-[46px] w-full items-center gap-3 rounded-xl px-4 text-[15px] font-medium text-white transition hover:bg-white/10"
+            className="flex h-[42px] w-full items-center gap-3 rounded-xl px-3 text-[13px] font-semibold text-white transition hover:bg-white/10"
           >
-            <LogOut size={19} strokeWidth={2} className="shrink-0" />
-            Logout
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10">
+              <LogOut size={16} strokeWidth={2.2} />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-left">
+              Logout{user?.name ? ` · ${user.name}` : ""}
+            </span>
           </button>
         </div>
       </aside>

@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getPortalTheme } from "@/lib/portal-theme";
 
 export default function MobileBottomNav({
   items = [],
+  portal = "parent",
 }) {
   const pathname = usePathname();
+  const theme = getPortalTheme(portal);
 
   return (
     <nav
@@ -18,11 +21,12 @@ export default function MobileBottomNav({
         z-40
         h-[68px]
         border-t
-        border-slate-200
-        bg-white
+        bg-white/95
+        backdrop-blur-xl
         shadow-[0_-4px_20px_rgba(15,23,42,0.06)]
         lg:hidden
       "
+      style={{ borderColor: theme.border }}
     >
       <div
         className="grid h-full"
@@ -53,14 +57,18 @@ export default function MobileBottomNav({
                 gap-1
                 text-[10px]
                 transition
-                ${
-                  active
-                    ? "font-semibold text-[#0075FF]"
-                    : "text-slate-500"
-                }
+                ${active ? "font-bold" : "text-slate-500"}
               `}
+              style={active ? { color: theme.accent } : undefined}
             >
-              {Icon && <Icon size={19} />}
+              {Icon && (
+                <span
+                  className="flex h-8 w-8 items-center justify-center rounded-xl"
+                  style={active ? { backgroundColor: theme.accentSoft } : undefined}
+                >
+                  <Icon size={18} strokeWidth={active ? 2.5 : 2} />
+                </span>
+              )}
 
               <span>
                 {item.label}

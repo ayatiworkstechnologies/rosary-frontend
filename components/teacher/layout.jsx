@@ -43,7 +43,7 @@ export default function TeacherLayout({ children }) {
       <AppShell portal="teacher" navItems={teacherNavigation} user={user}>
         {children}
       </AppShell>
-      <MobileBottomNav items={teacherBottomNavigation} />
+      <MobileBottomNav items={teacherBottomNavigation} portal="teacher" />
     </AuthGuard>
   );
 }
