@@ -9,8 +9,8 @@
 #   * set -euo pipefail: the script stops on any error.
 #   * The PM2 process is started/restarted ONLY after a verified build
 #     and a successful boot-test on a spare port.
-#   * Environment variables live in .env inside each release dir and
-#     are carried forward from the previous release.
+#   * The pre-cutover live release is recorded in app.previous so that
+#     --rollback always re-targets the actual previous release.
 #   * Never touches the database or the backend process.
 #
 # Usage:
@@ -47,8 +47,8 @@ require_tools() {
 }
 
 previous_release() {
-  # The release that "app" pointed to before this deploy, if any.
-  readlink "$APP_DIR" 2>/dev/null || true
+  # The release that was live before the most recent successful cutover.
+  cat "$APP_DIR.previous" 2>/dev/null || true
 }
 
 # ---------------------------------------------------------------------
@@ -57,7 +57,9 @@ previous_release() {
 do_rollback() {
   local previous
   previous=$(previous_release)
-  [ -n "$previous" ] || die "no previous release recorded for rollback"
+  [ -n "$previous" ] || die "no previous release recorded; set /var/www/rosary-frontend-releases/app.previous manually"
+  [ "$previous" != "$(readlink "$APP_DIR" 2>/dev/null)" ] ||
+    die "refusing rollback: app.previous equals the currently live release"
   [ -d "$previous" ] || die "previous release missing: $previous"
 
   pm2 delete "$PM2_NAME" >/dev/null 2>&1 || true
@@ -69,6 +71,8 @@ do_rollback() {
   pm2 pid "$PM2_NAME" > "$APP_DIR/pm2.pid"
   pm2 save
   verify_health || die "rollback failed health check"
+  # Freeze: further automatic rollbacks must be re-armed deliberately.
+  rm -f "$APP_DIR.previous"
   log "rollback complete: $previous"
   exit 0
 }
@@ -140,11 +144,14 @@ rsync -a --link-dest="$REPO_DIR/node_modules" "$REPO_DIR/node_modules/" "$RELEAS
 printf '%s\n' "$SHA" > "$RELEASE_DIR/RELEASE_HASH"
 cp /tmp/rosary-frontend-boottest.log "$RELEASE_DIR/boot-test.log" 2>/dev/null || true
 
-# 5. Cutover: swap the release only after the new build is verified
 #    (the boot-test in step 3 proved the build is servable).
 pm2 delete "$PM2_NAME" >/dev/null 2>&1 || true
 
 ln -sfn "$RELEASE_DIR" "$APP_DIR"
+# Record the rollback target BEFORE losing the old symlink value.
+if [ -n "${PREVIOUS:-}" ]; then
+  printf '%s\n' "$PREVIOUS" > "$APP_DIR.previous"
+fi
 pm2 start npm --name "$PM2_NAME" --cwd "$APP_DIR" -- \
   run start -- --port "$PORT" --hostname "$HOSTLISTEN" \
   || die "pm2 start failed"
@@ -164,9 +171,13 @@ done
 # 7. Auto-rollback if the new release does not come up.
 log "NEW RELEASE FAILED HEALTH CHECK -- rolling back"
 pm2 delete "$PM2_NAME" >/dev/null 2>&1 || true
-if [ -n "$PREVIOUS" ]; then
+if [ -n "${PREVIOUS:-}" ]; then
   ln -sfn "$PREVIOUS" "$APP_DIR"
+  # Drop the stale rollback target so --rollback cannot re-target the
+  # release that just failed.
+  rm -f "$APP_DIR.previous"
   pm2 start npm --name "$PM2_NAME" --cwd "$APP_DIR" -- run start -- --port "$PORT" --hostname "$HOSTLISTEN"
+  pm2 pid "$PM2_NAME" > "$APP_DIR/pm2.pid"
   pm2 save
   log "rolled back to $PREVIOUS"
 fi
