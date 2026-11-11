@@ -134,6 +134,38 @@
       // HTTP ERROR
       // ================================================
 
+      const responseStatus =
+        error.response?.status;
+
+      const requestUrl =
+        error.config?.url || "";
+
+      // A rejected login must remain on the login screen so its validation
+      // message is visible. For every other 401, clear stale credentials once
+      // and return to login instead of leaving the portal in a broken state.
+      if (
+        responseStatus === 401 &&
+        !requestUrl.includes("/auth/login") &&
+        typeof window !== "undefined"
+      ) {
+        const authKeys = [
+          "access_token",
+          "current_user",
+          "user_role",
+          "parent_login_admission_no",
+        ];
+
+        authKeys.forEach((key) => {
+          localStorage.removeItem(key);
+          sessionStorage.removeItem(key);
+        });
+
+        if (!window.__rosaryAuthRedirecting) {
+          window.__rosaryAuthRedirecting = true;
+          window.location.replace("/login?session=expired");
+        }
+      }
+
       console.error(
         "API Error:",
         {
