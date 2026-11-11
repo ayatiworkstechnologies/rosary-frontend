@@ -1,10 +1,16 @@
 
 import axios from "axios";
+import { API_BASE_URL } from "@/services/api";
 
-// Notification endpoints are outside /api/v1.
-// Use the existing Next.js backend proxy.
+// Keep notifications on the same environment-selected backend as the main
+// API. For example:
+//   http://localhost:8000/api/v1 -> http://localhost:8000/notifications
+//   /backend/api/v1             -> /backend/notifications
+const normalizedApiBaseUrl = API_BASE_URL.replace(/\/+$/, "");
+const backendRootUrl = normalizedApiBaseUrl.replace(/\/api\/v1$/i, "");
+
 const notificationApi = axios.create({
-  baseURL: "/backend/notifications",
+  baseURL: `${backendRootUrl}/notifications`,
   timeout: 15000,
 });
 
@@ -47,11 +53,10 @@ export async function markNotificationAsRead(notificationId) {
 // Staff (Admin + Teacher) notification inbox.
 //
 // New backend router: /api/v1/staff/notifications - role-guarded for
-// TEACHER/ADMIN only, scoped to the caller's own user_id. Parent
-// endpoints stay on "/backend/notifications" and remain parent-only.
+// TEACHER/ADMIN only, scoped to the caller's own user_id.
 // ------------------------------------------------------------------
 const staffNotificationApi = axios.create({
-  baseURL: "/backend/api/v1/staff/notifications",
+  baseURL: `${normalizedApiBaseUrl}/staff/notifications`,
   timeout: 15000,
 });
 

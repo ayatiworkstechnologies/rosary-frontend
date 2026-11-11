@@ -68,11 +68,11 @@ const ROLE_DETAILS = {
 
     label: "Teachers",
 
-    usernameLabel: "Teacher ID / Email",
+    usernameLabel: "Employee ID / Email",
 
-    usernamePlaceholder: "Enter Teacher ID / Email",
+    usernamePlaceholder: "Enter Employee ID / Email",
 
-    emptyMessage: "Please enter Teacher ID / Email.",
+    emptyMessage: "Please enter Employee ID / Email.",
 
   },
 
@@ -309,8 +309,9 @@ export default function LoginPage() {
     if (!form.password.trim()) {
 
       setError(
-
-        "Please enter your password."
+        role === "parent" || role === "teacher"
+          ? "Please enter the date of birth."
+          : "Please enter your password."
 
       );
 
@@ -1294,7 +1295,9 @@ export default function LoginPage() {
 
 
 
-                  Password
+                  {role === "parent" || role === "teacher"
+                    ? "Date of Birth (DDMMYYYY)"
+                    : "Password"}
 
 
 
@@ -1356,7 +1359,11 @@ export default function LoginPage() {
 
                     autoComplete="current-password"
 
-                    placeholder="Enter password"
+                    placeholder={
+                      role === "parent" || role === "teacher"
+                        ? "Enter DOB, e.g. 09022014"
+                        : "Enter password"
+                    }
 
                     className="w-full bg-transparent px-3 py-4 text-sm text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-70"
 

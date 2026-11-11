@@ -5,9 +5,24 @@
   // API BASE URL
   // =========================================================
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL ||
+  const configuredApiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
     "/backend/api/v1";
+
+  // Axios treats a host without a scheme (for example,
+  // "localhost:8000/api/v1") as an unsupported protocol. Keep relative
+  // proxy paths intact and make accidentally scheme-less hosts usable.
+  export const API_BASE_URL =
+    configuredApiBaseUrl.startsWith("/") ||
+    /^[a-z][a-z\d+.-]*:\/\//i.test(configuredApiBaseUrl)
+      ? configuredApiBaseUrl
+      : `${
+          /^(localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::|\/|$)/i.test(
+            configuredApiBaseUrl
+          )
+            ? "http"
+            : "https"
+        }://${configuredApiBaseUrl}`;
 
 
   // =========================================================

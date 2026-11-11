@@ -16,7 +16,6 @@ import {
 import {
   getAdminTeacher,
   updateAdminTeacher,
-  updateAdminTeacherPassword,
 } from "@/services/adminTeacherService";
 
 import {
@@ -24,7 +23,6 @@ import {
   Save,
   RefreshCw,
   AlertCircle,
-  KeyRound,
 } from "lucide-react";
 
 export default function EditTeacherPage() {
@@ -39,6 +37,7 @@ export default function EditTeacherPage() {
       username: "",
       email: "",
       employee_id: "",
+      date_of_birth: "",
       phone: "",
       designation: "",
       department: "",
@@ -48,24 +47,13 @@ export default function EditTeacherPage() {
       profile_image_url: "",
     });
 
-  const [password, setPassword] =
-    useState("");
-
   const [loading, setLoading] =
     useState(true);
 
   const [saving, setSaving] =
     useState(false);
 
-  const [
-    passwordSaving,
-    setPasswordSaving,
-  ] = useState(false);
-
   const [error, setError] =
-    useState("");
-
-  const [message, setMessage] =
     useState("");
 
   useEffect(() => {
@@ -97,6 +85,10 @@ export default function EditTeacherPage() {
 
           employee_id:
             teacher?.employee_id ||
+            "",
+
+          date_of_birth:
+            teacher?.date_of_birth ||
             "",
 
           phone:
@@ -179,6 +171,9 @@ export default function EditTeacherPage() {
           employee_id:
             form.employee_id.trim(),
 
+          date_of_birth:
+            form.date_of_birth,
+
           phone:
             form.phone.trim() ||
             null,
@@ -227,40 +222,6 @@ export default function EditTeacherPage() {
     }
   };
 
-  const handlePasswordReset =
-    async () => {
-      if (password.length < 6) {
-        setError(
-          "Password must contain at least 6 characters."
-        );
-        return;
-      }
-
-      try {
-        setPasswordSaving(true);
-        setError("");
-        setMessage("");
-
-        await updateAdminTeacherPassword(
-          teacherId,
-          password
-        );
-
-        setPassword("");
-
-        setMessage(
-          "Password updated successfully."
-        );
-      } catch (error) {
-        setError(
-          error?.message ||
-            "Unable to update password."
-        );
-      } finally {
-        setPasswordSaving(false);
-      }
-    };
-
   const inputClass =
     "h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#0075FF]";
 
@@ -304,12 +265,6 @@ export default function EditTeacherPage() {
               />
 
               {error}
-            </div>
-          )}
-
-          {message && (
-            <div className="mb-5 rounded-xl bg-green-50 p-4 text-sm text-green-700">
-              {message}
             </div>
           )}
 
@@ -367,6 +322,25 @@ export default function EditTeacherPage() {
                 onChange={handleChange}
                 className={inputClass}
               />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold">
+                Date of Birth
+              </label>
+
+              <input
+                type="date"
+                name="date_of_birth"
+                value={form.date_of_birth}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
+
+              <p className="mt-1 text-xs text-gray-500">
+                Saving generates the login password as DDMMYYYY.
+              </p>
             </div>
 
             <div>
@@ -477,63 +451,6 @@ export default function EditTeacherPage() {
           </div>
 
         </form>
-
-        {/* PASSWORD */}
-
-        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-
-          <div className="mb-4 flex items-center gap-3">
-
-            <KeyRound
-              size={20}
-              className="text-[#0075FF]"
-            />
-
-            <div>
-              <h2 className="font-semibold text-[#0B3A67]">
-                Reset Password
-              </h2>
-
-              <p className="text-sm text-gray-500">
-                Set a new Teacher
-                Portal login password.
-              </p>
-            </div>
-
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-
-            <input
-              type="password"
-              value={password}
-              onChange={(e) =>
-                setPassword(
-                  e.target.value
-                )
-              }
-              placeholder="New password"
-              className={inputClass}
-            />
-
-            <button
-              type="button"
-              onClick={
-                handlePasswordReset
-              }
-              disabled={
-                passwordSaving
-              }
-              className="h-12 shrink-0 rounded-xl bg-gray-900 px-5 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {passwordSaving
-                ? "Updating..."
-                : "Update Password"}
-            </button>
-
-          </div>
-
-        </section>
 
       </div>
     </>

@@ -39,6 +39,8 @@ export default function AddAdminStudentPage() {
       admission_no: "",
       roll_no: "",
       full_name: "",
+      date_of_birth: "",
+      parent_email: "",
       gender: "",
       class_id: "",
       is_active: true,
@@ -126,10 +128,19 @@ export default function AddAdminStudentPage() {
       return;
     }
 
+    if (!form.date_of_birth) {
+      setError(
+        "Date of birth is required."
+      );
+
+      return;
+    }
+
     try {
       setSaving(true);
 
-      await createAdminStudent({
+      const response =
+        await createAdminStudent({
         admission_no:
           form.admission_no.trim(),
 
@@ -139,6 +150,13 @@ export default function AddAdminStudentPage() {
 
         full_name:
           form.full_name.trim(),
+
+        date_of_birth:
+          form.date_of_birth,
+
+        parent_email:
+          form.parent_email.trim() ||
+          null,
 
         gender:
           form.gender || null,
@@ -155,7 +173,14 @@ export default function AddAdminStudentPage() {
       });
 
       setSuccess(
-        "Student created successfully."
+        `Student and parent login created. Username: ${
+          response?.data
+            ?.login_username ||
+          form.admission_no.trim()
+        }; initial password: ${
+          response?.data
+            ?.initial_password || ""
+        } (DOB in DDMMYYYY format).`
       );
 
       setTimeout(() => {
@@ -164,7 +189,7 @@ export default function AddAdminStudentPage() {
         );
 
         router.refresh();
-      }, 700);
+      }, 3000);
     } catch (error) {
       setError(
         error?.message ||
@@ -306,6 +331,63 @@ export default function AddAdminStudentPage() {
                 maxLength={150}
                 className="h-12 w-full rounded-xl border border-gray-200 px-4 text-sm outline-none focus:border-[#0075FF]"
               />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                Date of Birth *
+              </label>
+
+              <input
+                type="date"
+                name="date_of_birth"
+                value={
+                  form.date_of_birth
+                }
+                onChange={
+                  handleChange
+                }
+                max={
+                  new Date()
+                    .toISOString()
+                    .split("T")[0]
+                }
+                required
+                className="h-12 w-full rounded-xl border border-gray-200 px-4 text-sm outline-none focus:border-[#0075FF]"
+              />
+
+              <p className="mt-2 text-xs text-gray-500">
+                The initial parent login
+                password will be generated
+                as DDMMYYYY.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                Parent Email Address
+              </label>
+
+              <input
+                type="email"
+                name="parent_email"
+                value={
+                  form.parent_email
+                }
+                onChange={
+                  handleChange
+                }
+                placeholder="parent@example.com"
+                autoComplete="email"
+                maxLength={150}
+                className="h-12 w-full rounded-xl border border-gray-200 px-4 text-sm outline-none focus:border-[#0075FF]"
+              />
+
+              <p className="mt-2 text-xs text-gray-500">
+                The parent must verify this
+                address and opt in before
+                email notifications are sent.
+              </p>
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">

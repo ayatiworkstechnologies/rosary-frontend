@@ -30,8 +30,8 @@ export default function AddTeacherPage() {
       name: "",
       username: "",
       email: "",
-      password: "",
       employee_id: "",
+      date_of_birth: "",
       phone: "",
       designation: "",
       department: "",
@@ -85,9 +85,9 @@ export default function AddTeacherPage() {
       return;
     }
 
-    if (!form.password) {
+    if (!form.date_of_birth) {
       setError(
-        "Password is required."
+        "Date of birth is required."
       );
       return;
     }
@@ -112,11 +112,11 @@ export default function AddTeacherPage() {
           form.email.trim() ||
           null,
 
-        password:
-          form.password,
-
         employee_id:
           form.employee_id.trim(),
+
+        date_of_birth:
+          form.date_of_birth,
 
         phone:
           form.phone.trim() ||
@@ -281,17 +281,19 @@ export default function AddTeacherPage() {
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Password *
+                Date of Birth *
               </label>
 
               <input
-                type="password"
-                name="password"
-                value={form.password}
+                type="date"
+                name="date_of_birth"
+                value={form.date_of_birth}
                 onChange={handleChange}
                 className={inputClass}
-                placeholder="Minimum 6 characters"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Login password is generated as DDMMYYYY.
+              </p>
             </div>
 
             <div>

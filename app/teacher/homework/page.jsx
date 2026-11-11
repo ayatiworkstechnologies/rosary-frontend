@@ -5,6 +5,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 
 import {
   BookOpen,
@@ -78,6 +79,36 @@ export default function TeacherHomeworkPage() {
     due_date: "",
     attachment_url: "",
   });
+
+
+  useEffect(() => {
+    if (!showForm) return;
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowForm(false);
+      }
+    };
+
+    document.body.style.overflow =
+      "hidden";
+    document.addEventListener(
+      "keydown",
+      handleEscape
+    );
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow;
+      document.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+    };
+  }, [showForm]);
 
 
   // =========================================
@@ -625,7 +656,10 @@ export default function TeacherHomeworkPage() {
           ADD HOMEWORK MODAL
       ========================================== */}
 
-      {showForm && (
+      {showForm &&
+        typeof document !==
+          "undefined" &&
+        createPortal(
         <div
           className="
             fixed
@@ -642,7 +676,7 @@ export default function TeacherHomeworkPage() {
 
           <div
             className="
-              max-h-[90vh]
+              max-h-[calc(100dvh-2rem)]
               w-full
               max-w-[620px]
               overflow-y-auto
@@ -650,6 +684,9 @@ export default function TeacherHomeworkPage() {
               bg-white
               shadow-2xl
             "
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-homework-title"
           >
 
             {/* MODAL HEADER */}
@@ -673,7 +710,10 @@ export default function TeacherHomeworkPage() {
 
               <div>
 
-                <h2 className="text-lg font-bold text-[#0B3A67]">
+                <h2
+                  id="add-homework-title"
+                  className="text-lg font-bold text-[#0B3A67]"
+                >
                   Add Homework
                 </h2>
 
@@ -873,7 +913,8 @@ export default function TeacherHomeworkPage() {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
