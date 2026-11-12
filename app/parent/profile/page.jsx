@@ -28,6 +28,14 @@ import {
 
   ShieldCheck,
 
+  BadgeCheck,
+
+  BellRing,
+
+  CircleAlert,
+
+  Send,
+
   UserRound,
 
   Users,
@@ -39,6 +47,12 @@ import {
   getParentProfile,
 
 } from "@/services/parentService";
+
+import {
+  getParentEmailPreferences,
+  requestParentEmailVerification,
+  updateParentEmailPreferences,
+} from "@/services/parentEmailService";
 
 const passthroughImageLoader = ({ src }) => src;
 
@@ -74,6 +88,13 @@ export default function ParentProfilePage() {
 
   ] = useState("");
 
+  const [emailPreferences, setEmailPreferences] = useState(null);
+  const [emailLoading, setEmailLoading] = useState(true);
+  const [emailError, setEmailError] = useState("");
+  const [emailNotice, setEmailNotice] = useState("");
+  const [verificationSending, setVerificationSending] = useState(false);
+  const [preferenceSaving, setPreferenceSaving] = useState(false);
+
   // =======================================================
 
   // LOAD PROFILE
@@ -85,65 +106,39 @@ export default function ParentProfilePage() {
     let cancelled = false;
 
     async function loadProfile() {
-
       try {
-
-        const data =
-
-          await getParentProfile();
+        // Keep these sequential. The profile is the primary page payload and
+        // must remain usable when the optional preferences request fails.
+        const data = await getParentProfile();
 
         if (cancelled) {
-
           return;
-
         }
-
-        setProfile(
-
-          data
-
-        );
-
+        setProfile(data);
         setError("");
-
       } catch (err) {
-
-        console.error(
-
-          "Parent profile:",
-
-          err
-
-        );
-
         if (!cancelled) {
-
-          setError(
-
-            err?.response
-
-              ?.data
-
-              ?.detail ||
-
-            "Unable to load profile."
-
-          );
-
+          setError(err?.response?.data?.detail || "Unable to load profile.");
+          setEmailLoading(false);
         }
-
+        return;
       } finally {
-
         if (!cancelled) {
-
-          setLoading(
-
-            false
-
-          );
-
+          setLoading(false);
         }
+      }
 
+      if (cancelled) return;
+      try {
+        const preferences = await getParentEmailPreferences();
+        if (!cancelled) {
+          setEmailPreferences(preferences);
+          setEmailError("");
+        }
+      } catch (err) {
+        if (!cancelled) setEmailError(emailErrorMessage(err));
+      } finally {
+        if (!cancelled) setEmailLoading(false);
       }
 
     }
@@ -157,6 +152,56 @@ export default function ParentProfilePage() {
     };
 
   }, []);
+
+  async function refreshEmailPreferences() {
+    const data = await getParentEmailPreferences();
+    setEmailPreferences(data);
+    return data;
+  }
+
+  async function handleVerificationRequest() {
+    if (verificationSending || !emailPreferences?.email) return;
+    setVerificationSending(true);
+    setEmailError("");
+    setEmailNotice("");
+    try {
+      const result = await requestParentEmailVerification();
+      setEmailNotice(
+        result?.message || "Verification email sent. Please check your inbox."
+      );
+      await refreshEmailPreferences();
+    } catch (err) {
+      setEmailError(emailErrorMessage(err));
+    } finally {
+      setVerificationSending(false);
+    }
+  }
+
+  async function handlePreferenceChange(event) {
+    const enabled = event.target.checked;
+    if (preferenceSaving) return;
+    setPreferenceSaving(true);
+    setEmailError("");
+    setEmailNotice("");
+    try {
+      await updateParentEmailPreferences(enabled);
+      const saved = await refreshEmailPreferences();
+      setEmailNotice(
+        saved.email_notifications_enabled
+          ? "Email notifications have been enabled."
+          : "Email notifications have been disabled."
+      );
+    } catch (err) {
+      setEmailError(emailErrorMessage(err));
+      try {
+        await refreshEmailPreferences();
+      } catch {
+        // Keep the last confirmed server state if refresh also fails.
+      }
+    } finally {
+      setPreferenceSaving(false);
+    }
+  }
 
   // =======================================================
 
@@ -792,6 +837,17 @@ export default function ParentProfilePage() {
 
       </div>
 
+      <EmailNotificationSection
+        preferences={emailPreferences}
+        loading={emailLoading}
+        error={emailError}
+        notice={emailNotice}
+        verificationSending={verificationSending}
+        preferenceSaving={preferenceSaving}
+        onVerify={handleVerificationRequest}
+        onPreferenceChange={handlePreferenceChange}
+      />
+
       {/* LINKED CHILDREN */}
 
       <section
@@ -1014,6 +1070,116 @@ export default function ParentProfilePage() {
 
   );
 
+}
+
+function EmailNotificationSection({
+  preferences,
+  loading,
+  error,
+  notice,
+  verificationSending,
+  preferenceSaving,
+  onVerify,
+  onPreferenceChange,
+}) {
+  const hasEmail = Boolean(preferences?.email);
+  const verified = Boolean(preferences?.email_verified_at);
+  const toggleDisabled = loading || !verified || preferenceSaving;
+
+  return (
+    <section className="mt-5 rounded-2xl border border-[#E4EDF7] bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF4FF] text-[#0075FF]">
+          <BellRing size={19} />
+        </div>
+        <div>
+          <h2 className="font-bold text-[#0B3A67]">Email Notifications &amp; Verification</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Verify your registered address before choosing optional school email updates.
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="mt-5 flex min-h-24 items-center justify-center rounded-xl bg-[#F8FBFF] text-sm text-slate-500" role="status">
+          <Loader2 size={18} className="mr-2 animate-spin text-[#0075FF]" />
+          Loading email preferences...
+        </div>
+      ) : (
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-xl border border-[#E4EDF7] bg-[#F8FBFF] p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Registered Email</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <p className="min-w-0 break-all text-sm font-semibold text-[#0B3A67]">
+                {preferences?.email || "No email address registered"}
+              </p>
+              {hasEmail && (
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${verified ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                  {verified ? <BadgeCheck size={14} /> : <CircleAlert size={14} />}
+                  {verified ? "Verified" : "Unverified"}
+                </span>
+              )}
+            </div>
+            {!hasEmail ? (
+              <p className="mt-3 text-xs leading-5 text-slate-500">Ask the school office to add an email address to your parent account.</p>
+            ) : !verified ? (
+              <button
+                type="button"
+                onClick={onVerify}
+                disabled={verificationSending}
+                className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#0075FF] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0066DD] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0075FF] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {verificationSending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {verificationSending ? "Sending..." : "Send verification email"}
+              </button>
+            ) : (
+              <p className="mt-3 text-xs leading-5 text-green-700">Your address is ready for optional email notifications.</p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-[#E4EDF7] p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <label htmlFor="parent-email-notifications" className="text-sm font-bold text-[#0B3A67]">Optional email notifications</label>
+                <p id="parent-email-notifications-help" className="mt-1 text-xs leading-5 text-slate-500">
+                  Receive eligible homework, attendance, result, circular, event and fee updates.
+                </p>
+              </div>
+              <input
+                id="parent-email-notifications"
+                type="checkbox"
+                role="switch"
+                aria-describedby="parent-email-notifications-help"
+                aria-checked={Boolean(preferences?.email_notifications_enabled)}
+                checked={Boolean(preferences?.email_notifications_enabled)}
+                disabled={toggleDisabled}
+                onChange={onPreferenceChange}
+                className="mt-1 h-5 w-9 shrink-0 cursor-pointer accent-[#0075FF] disabled:cursor-not-allowed"
+              />
+            </div>
+            {!verified && (
+              <p className="mt-3 text-xs font-medium text-amber-700">Verification is required before this preference can be enabled.</p>
+            )}
+            {preferenceSaving && (
+              <p className="mt-3 flex items-center gap-2 text-xs text-slate-500" role="status"><Loader2 size={14} className="animate-spin" />Saving preference...</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {notice && <p className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700" role="status">{notice}</p>}
+      {error && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+    </section>
+  );
+}
+
+function emailErrorMessage(error) {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (error?.message?.startsWith("Cannot connect to backend")) {
+    return "Unable to connect to the school server. Please try again."
+  }
+  return "Unable to update email settings. Please try again."
 }
 
 // =========================================================

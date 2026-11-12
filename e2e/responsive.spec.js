@@ -70,6 +70,17 @@ test.describe("Responsive layout verification", () => {
     await noHorizontalOverflow(page);
   });
 
+  test("parent email preferences fit small screens", async ({ page }) => {
+    await enforceLocalOnly(page);
+    await login(page, "parent", "parent", "TESTADM1");
+    await page.goto("/parent/profile");
+    await expect(page.getByText("Email Notifications & Verification")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByRole("switch", { name: /Optional email notifications/i })).toBeVisible();
+    await noHorizontalOverflow(page);
+  });
+
   test("admin notification dropdown usable on small screens", async ({ page, request }) => {
     // guarantee at least one admin notification via teacher result
     // save (exam2 stays unpublished across the desktop suite, so a
