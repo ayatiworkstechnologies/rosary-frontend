@@ -207,9 +207,9 @@ test.describe("Admin Portal", () => {
 
     await page.getByRole("button", { name: "Preview Recipients" }).click();
     await expect(page.getByText("Linked parents")).toBeVisible();
-    await expect(page.getByText("Email eligible")).toBeVisible();
+    await expect(page.getByText("Optional eligible")).toBeVisible();
     await expect(page.getByText("Linked parents").locator("..")).toContainText("1");
-    await expect(page.getByText("Email eligible").locator("..")).toContainText("1");
+    await expect(page.getByText("Optional eligible").locator("..")).toContainText("1");
   });
 
   test("notification bell: live inbox with result-submission events", async ({ page, request }) => {

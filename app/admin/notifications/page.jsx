@@ -55,6 +55,7 @@ export default function AdminNotificationsPage() {
   const [students, setStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [emailStatus, setEmailStatus] = useState(null);
+  const [emailMetrics, setEmailMetrics] = useState(null);
   const [history, setHistory] = useState([]);
 
   const [loadingClasses, setLoadingClasses] = useState(false);
@@ -122,13 +123,15 @@ export default function AdminNotificationsPage() {
 
     async function loadEmailData() {
       try {
-        const [statusResponse, historyResponse] = await Promise.all([
+        const [statusResponse, metricsResponse, historyResponse] = await Promise.all([
           api.get("/admin/notifications/email-status"),
+          api.get("/admin/notifications/email-metrics"),
           api.get("/admin/notifications/email-batches", {
             params: { page: 1, page_size: 10 },
           }),
         ]);
         setEmailStatus(statusResponse.data);
+        setEmailMetrics(metricsResponse.data);
         setHistory(getItems(historyResponse.data));
       } catch (err) {
         setError(`Unable to load email status: ${getError(err)}`);
@@ -443,10 +446,13 @@ export default function AdminNotificationsPage() {
       setPreviewSignature("");
       setSendRequestKey("");
 
-      const historyResponse = await api.get(
-        "/admin/notifications/email-batches",
-        { params: { page: 1, page_size: 10 } }
-      );
+      const [metricsResponse, historyResponse] = await Promise.all([
+        api.get("/admin/notifications/email-metrics"),
+        api.get("/admin/notifications/email-batches", {
+          params: { page: 1, page_size: 10 },
+        }),
+      ]);
+      setEmailMetrics(metricsResponse.data);
       setHistory(getItems(historyResponse.data));
     } catch (err) {
       setError(getError(err));
@@ -483,6 +489,116 @@ export default function AdminNotificationsPage() {
           >
             {notice}
           </div>
+        )}
+
+        {emailMetrics && (
+          <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
+            <div>
+              <h2 className="text-lg font-bold text-[#0B3A67]">
+                Email Delivery Health
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Aggregate queue activity. Recipient addresses remain masked.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {[
+                ["Notifications", emailMetrics.total_notifications_created],
+                ["Queued", emailMetrics.total_queued || 0],
+                ["Sent", emailMetrics.total_sent || 0],
+                ["Failed", emailMetrics.total_failed || 0],
+                ["Retries", emailMetrics.total_retried || 0],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {label}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-[#0B3A67]">
+                    {value || 0}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Last worker activity: {emailMetrics.last_worker_activity
+                ? new Date(emailMetrics.last_worker_activity).toLocaleString()
+                : "No delivery attempts recorded"}
+            </p>
+
+            {emailMetrics.recent_failures?.length > 0 && (
+              <div className="rounded-lg border border-red-100 bg-red-50 p-4">
+                <p className="text-sm font-semibold text-red-800">
+                  Recent delivery failures
+                </p>
+                <ul className="mt-2 space-y-2 text-xs text-red-700">
+                  {emailMetrics.recent_failures.slice(0, 5).map((failure) => (
+                    <li key={failure.delivery_id}>
+                      {failure.email} · batch {failure.batch_id} · {failure.reason || "Unknown provider error"}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
+
+        {emailStatus && (
+          <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-[#0B3A67]">
+                  Automatic Email Policy
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Manual Admin emails remain optional and only include verified,
+                  opted-in parents. Operational eligibility applies only to
+                  separately approved automatic categories.
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  emailStatus.operational_master_enabled
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-slate-100 text-slate-700"
+                }`}
+              >
+                Operational policy {emailStatus.operational_master_enabled
+                  ? "enabled"
+                  : "disabled"}
+              </span>
+            </div>
+
+            {emailStatus.test_mode_enabled && (
+              <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
+                Restricted test mode is active. Empty or invalid allowlists
+                permit zero email recipients.
+              </p>
+            )}
+
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {Object.entries(emailStatus.automatic_categories || {}).map(
+                ([category, policy]) => (
+                  <div
+                    key={category}
+                    className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs"
+                  >
+                    <span className="font-semibold text-slate-700">
+                      {category.replaceAll("_", " ")}
+                    </span>
+                    <span className="text-slate-500">
+                      {policy.operational_enabled
+                        ? "Operational approved"
+                        : policy.automatic_enabled
+                          ? "Optional only"
+                          : "Disabled"}
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+          </section>
         )}
 
         <form
@@ -747,7 +863,7 @@ export default function AdminNotificationsPage() {
                     }}
                     className="h-4 w-4 accent-blue-600"
                   />
-                  Email verified, enabled parents
+                  Optional email: verified, opted-in parents
                 </label>
                 {emailStatus &&
                   (!emailStatus.enabled || !emailStatus.provider_ready) && (
@@ -782,7 +898,7 @@ export default function AdminNotificationsPage() {
             </div>
 
             {previewIsCurrent && (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                 <div className="rounded-lg bg-white p-3">
                   <p className="text-xs text-slate-500">Linked parents</p>
                   <p className="text-xl font-bold text-[#0B3A67]">
@@ -790,7 +906,7 @@ export default function AdminNotificationsPage() {
                   </p>
                 </div>
                 <div className="rounded-lg bg-emerald-50 p-3">
-                  <p className="text-xs text-emerald-700">Email eligible</p>
+                  <p className="text-xs text-emerald-700">Optional eligible</p>
                   <p className="text-xl font-bold text-emerald-800">
                     {previewData.email_recipient_count.toLocaleString()}
                   </p>
@@ -815,8 +931,25 @@ export default function AdminNotificationsPage() {
                     ).toLocaleString()}
                   </p>
                 </div>
+                <div className="rounded-lg bg-blue-50 p-3">
+                  <p className="text-xs text-blue-700">
+                    Operational address-ready
+                  </p>
+                  <p className="text-xl font-bold text-blue-800">
+                    {(previewData.operational_email_recipient_count || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-red-50 p-3">
+                  <p className="text-xs text-red-700">Suppressed / test-filtered</p>
+                  <p className="text-xl font-bold text-red-800">
+                    {(
+                      (previewData.suppressed_email_count || 0) +
+                      (previewData.test_filtered_count || 0)
+                    ).toLocaleString()}
+                  </p>
+                </div>
                 {previewData.deduplicated_email_count > 0 && (
-                  <p className="text-xs text-slate-600 sm:col-span-2 lg:col-span-4">
+                  <p className="text-xs text-slate-600 sm:col-span-2 lg:col-span-6">
                     {previewData.deduplicated_email_count} duplicate email
                     address(es) were removed, including sibling-linked
                     accounts.
