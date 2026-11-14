@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import api from "../../../services/api";
 
 const emptyForm = {
-  target_type: "ALL_PARENTS",
+  target_type: "INDIVIDUAL_PARENT",
   class_ids: [],
   student_ids: [],
   parent_user_id: null,
@@ -44,6 +44,20 @@ const inputStyle =
 
 const labelStyle =
   "mb-2 block text-sm font-semibold text-slate-700";
+
+const targetLabels = {
+  ALL_PARENTS: "All Parents",
+  CLASSES: "Selected Classes",
+  STUDENTS: "Selected Students",
+  INDIVIDUAL_PARENT: "Individual Parent",
+};
+
+const categoryLabels = {
+  GENERAL: "General announcement",
+  CIRCULAR: "Circular announcement",
+  IMPORTANT: "Important school update",
+  FEE_REMINDER: "Fee reminder",
+};
 
 export default function AdminNotificationsPage() {
   const [form, setForm] = useState(emptyForm);
@@ -91,6 +105,34 @@ export default function AdminNotificationsPage() {
   const previewIsCurrent =
     recipientCount !== null &&
     previewSignature === signature;
+
+  const optionalEmailAvailable = Boolean(
+    emailStatus?.enabled && emailStatus?.provider_ready
+  );
+
+  const operationalCategories = Object.entries(
+    emailStatus?.automatic_categories || {}
+  ).filter(([, policy]) => policy.operational_enabled);
+
+  function recipientSelectionSummary() {
+    if (form.target_type === "INDIVIDUAL_PARENT") {
+      return selectedParent
+        ? `${selectedParent.name} (${selectedParent.username})`
+        : "Individual Parent";
+    }
+    if (form.target_type === "CLASSES") {
+      const selected = classes
+        .filter((item) => form.class_ids.includes(Number(item.id)))
+        .map((item) => `${item.name} - ${item.section}`);
+      return selected.length > 0 ? selected.join(", ") : "Selected Classes";
+    }
+    if (form.target_type === "STUDENTS") {
+      return selectedStudents.length > 0
+        ? selectedStudents.map((student) => student.full_name).join(", ")
+        : "Selected Students";
+    }
+    return targetLabels[form.target_type];
+  }
 
   function resetPreview() {
     setRecipientCount(null);
@@ -289,7 +331,7 @@ export default function AdminNotificationsPage() {
 
     if (
       form.send_email &&
-      (!emailStatus?.enabled || !emailStatus?.provider_ready)
+      !optionalEmailAvailable
     ) {
       throw new Error("Parent email delivery is not configured yet.");
     }
@@ -570,12 +612,18 @@ export default function AdminNotificationsPage() {
               </span>
             </div>
 
-            {emailStatus.test_mode_enabled && (
-              <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
-                Restricted test mode is active. Empty or invalid allowlists
-                permit zero email recipients.
-              </p>
-            )}
+            <p
+              role="status"
+              className={`rounded-lg border p-3 text-xs ${
+                emailStatus.delivery_mode === "available"
+                  ? "border-green-200 bg-green-50 text-green-800"
+                  : emailStatus.delivery_mode === "test"
+                    ? "border-blue-200 bg-blue-50 text-blue-800"
+                    : "border-amber-200 bg-amber-50 text-amber-800"
+              }`}
+            >
+              {emailStatus.delivery_status_message}
+            </p>
 
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {Object.entries(emailStatus.automatic_categories || {}).map(
@@ -611,12 +659,7 @@ export default function AdminNotificationsPage() {
             </label>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {[
-                ["ALL_PARENTS", "All Parents"],
-                ["CLASSES", "Selected Classes"],
-                ["STUDENTS", "Selected Students"],
-                ["INDIVIDUAL_PARENT", "Individual Parent"],
-              ].map(([value, label]) => (
+              {Object.entries(targetLabels).map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
@@ -799,7 +842,7 @@ export default function AdminNotificationsPage() {
             </section>
           )}
 
-          <section className="grid gap-5 rounded-lg border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+          <section className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <div>
               <label htmlFor="notification-category" className={labelStyle}>
                 Notification Type
@@ -830,48 +873,78 @@ export default function AdminNotificationsPage() {
 
             <div>
               <span className={labelStyle}>Delivery Channels</span>
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={form.send_in_app}
-                    onChange={(event) => {
-                      setForm((previous) => ({
-                        ...previous,
-                        send_in_app: event.target.checked,
-                      }));
-                      setSendRequestKey("");
-                    }}
-                    className="h-4 w-4 accent-blue-600"
-                  />
-                  In-app Parent Portal notification
+              <div className="grid gap-3 md:grid-cols-3">
+                <label className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
+                  <span className="flex items-center gap-3 font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={form.send_in_app}
+                      onChange={(event) => {
+                        setForm((previous) => ({
+                          ...previous,
+                          send_in_app: event.target.checked,
+                        }));
+                        setSendRequestKey("");
+                      }}
+                      className="h-4 w-4 accent-blue-600"
+                    />
+                    In-app
+                  </span>
+                  <span className="mt-2 block text-xs font-normal leading-5 text-slate-500">
+                    Parent Portal notification. This remains available even when
+                    email delivery is disabled.
+                  </span>
                 </label>
-                <label className="flex items-center gap-3 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={form.send_email}
-                    disabled={
-                      !emailStatus?.enabled ||
-                      !emailStatus?.provider_ready
-                    }
-                    onChange={(event) => {
-                      setForm((previous) => ({
-                        ...previous,
-                        send_email: event.target.checked,
-                      }));
-                      setSendRequestKey("");
-                    }}
-                    className="h-4 w-4 accent-blue-600"
-                  />
-                  Optional email: verified, opted-in parents
+                <label
+                  className={`rounded-lg border bg-white p-4 text-sm ${
+                    optionalEmailAvailable
+                      ? "border-slate-200 text-slate-700"
+                      : "border-slate-200 text-slate-400"
+                  }`}
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={form.send_email}
+                      disabled={!optionalEmailAvailable}
+                      onChange={(event) => {
+                        setForm((previous) => ({
+                          ...previous,
+                          send_email: event.target.checked,
+                        }));
+                        setSendRequestKey("");
+                      }}
+                      className="h-4 w-4 accent-blue-600"
+                    />
+                    Optional Email
+                  </span>
+                  <span className="mt-2 block text-xs font-normal leading-5">
+                    Verified, opted-in parents only.
+                    {!optionalEmailAvailable && emailStatus
+                      ? ` ${emailStatus.delivery_status_message}`
+                      : ""}
+                  </span>
                 </label>
-                {emailStatus &&
-                  (!emailStatus.enabled || !emailStatus.provider_ready) && (
-                    <p className="text-xs text-amber-700">
-                      Email remains disabled until the approved provider and
-                      production environment are configured.
-                    </p>
-                  )}
+                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
+                  <span className="flex items-center gap-3 font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      disabled
+                      aria-label="Operational Email"
+                      className="h-4 w-4 accent-blue-600"
+                    />
+                    Operational Email
+                  </span>
+                  <span className="mt-2 block text-xs font-normal leading-5 text-slate-500">
+                    Automatic only; never selectable for a manual Admin message.
+                    {operationalCategories.length > 0
+                      ? ` Approved categories: ${operationalCategories
+                          .map(([category]) => category.replaceAll("_", " "))
+                          .join(", ")}.`
+                      : " No categories are currently approved."}
+                  </span>
+                </div>
               </div>
             </div>
           </section>
@@ -900,7 +973,7 @@ export default function AdminNotificationsPage() {
             {previewIsCurrent && (
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                 <div className="rounded-lg bg-white p-3">
-                  <p className="text-xs text-slate-500">Linked parents</p>
+                  <p className="text-xs text-slate-500">In-app eligible</p>
                   <p className="text-xl font-bold text-[#0B3A67]">
                     {recipientCount.toLocaleString()}
                   </p>
@@ -912,49 +985,42 @@ export default function AdminNotificationsPage() {
                   </p>
                 </div>
                 <div className="rounded-lg bg-amber-50 p-3">
-                  <p className="text-xs text-amber-700">Missing / invalid</p>
+                  <p className="text-xs text-amber-700">Optional excluded</p>
                   <p className="text-xl font-bold text-amber-800">
-                    {(
-                      previewData.missing_email_count +
-                      previewData.invalid_email_count
-                    ).toLocaleString()}
+                    {previewData.excluded_email_recipient_count.toLocaleString()}
                   </p>
                 </div>
                 <div className="rounded-lg bg-violet-50 p-3">
-                  <p className="text-xs text-violet-700">
-                    Unverified / opted out
-                  </p>
+                  <p className="text-xs text-violet-700">Verified eligible</p>
                   <p className="text-xl font-bold text-violet-800">
-                    {(
-                      previewData.unverified_email_count +
-                      previewData.opted_out_count
-                    ).toLocaleString()}
+                    {previewData.verified_email_recipient_count.toLocaleString()}
                   </p>
                 </div>
                 <div className="rounded-lg bg-blue-50 p-3">
-                  <p className="text-xs text-blue-700">
-                    Operational address-ready
-                  </p>
+                  <p className="text-xs text-blue-700">Unverified</p>
                   <p className="text-xl font-bold text-blue-800">
+                    {previewData.unverified_email_count.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-sky-50 p-3">
+                  <p className="text-xs text-sky-700">Operational ready</p>
+                  <p className="text-xl font-bold text-sky-800">
                     {(previewData.operational_email_recipient_count || 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="rounded-lg bg-red-50 p-3">
-                  <p className="text-xs text-red-700">Suppressed / test-filtered</p>
-                  <p className="text-xl font-bold text-red-800">
-                    {(
-                      (previewData.suppressed_email_count || 0) +
-                      (previewData.test_filtered_count || 0)
-                    ).toLocaleString()}
-                  </p>
-                </div>
-                {previewData.deduplicated_email_count > 0 && (
-                  <p className="text-xs text-slate-600 sm:col-span-2 lg:col-span-6">
-                    {previewData.deduplicated_email_count} duplicate email
-                    address(es) were removed, including sibling-linked
-                    accounts.
-                  </p>
-                )}
+                <p className="text-xs text-slate-600 sm:col-span-2 lg:col-span-6">
+                  Excluded optional email: {previewData.missing_email_count} missing,{" "}
+                  {previewData.invalid_email_count} invalid,{" "}
+                  {previewData.unverified_email_count} unverified,{" "}
+                  {previewData.opted_out_count} opted out,{" "}
+                  {previewData.suppressed_email_count || 0} suppressed,{" "}
+                  {previewData.test_filtered_count || 0} test-filtered, and{" "}
+                  {previewData.deduplicated_email_count} duplicate address(es).
+                  Operational readiness is informational and does not authorize
+                  manual operational delivery;{" "}
+                  {previewData.operational_unverified_email_count || 0}{" "}
+                  address-ready recipient(s) are unverified.
+                </p>
               </div>
             )}
             {form.target_type !== "INDIVIDUAL_PARENT" && (
@@ -1128,6 +1194,46 @@ export default function AdminNotificationsPage() {
               .
             </p>
 
+            <dl className="grid gap-3 rounded-lg border border-slate-200 p-4 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Recipient selection
+                </dt>
+                <dd className="mt-1 text-slate-800">
+                  {recipientSelectionSummary()}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Category
+                </dt>
+                <dd className="mt-1 text-slate-800">
+                  {categoryLabels[form.category]}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Selected channels
+                </dt>
+                <dd className="mt-1 text-slate-800">
+                  {[
+                    form.send_in_app ? "In-app" : null,
+                    form.send_email ? "Optional Email" : null,
+                  ].filter(Boolean).join(" + ")}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Email availability
+                </dt>
+                <dd className="mt-1 text-slate-800">
+                  Optional Email:{" "}
+                  {optionalEmailAvailable ? "available" : "unavailable"};
+                  Operational Email: automatic approved categories only
+                </dd>
+              </div>
+            </dl>
+
             <div className="rounded-lg bg-slate-50 p-4">
               <p className="font-semibold text-[#0B3A67]">
                 {form.title}
@@ -1156,9 +1262,9 @@ export default function AdminNotificationsPage() {
             )}
 
             <p className="text-xs text-amber-700">
-              Email requests are idempotent and enter the durable delivery
-              queue. Confirm the recipient preview and school authorization
-              before continuing.
+              Confirm the recipient selection, category, delivery channels, and
+              message before continuing. Optional email requests are idempotent
+              and enter the durable delivery queue.
             </p>
 
             <div className="flex justify-end gap-3">

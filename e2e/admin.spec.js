@@ -189,6 +189,36 @@ test.describe("Admin Portal", () => {
     await expect(page.getByText(/no classes available|Send|Compose|Notification/i).first()).toBeVisible({
       timeout: 15_000,
     });
+    await expect(page.getByRole("button", { name: "Individual Parent" })).toHaveClass(/border-blue-600/);
+    await expect(page.getByRole("checkbox", { name: "Operational Email" })).toBeDisabled();
+    await expect(page.getByText(/Restricted test mode is active/i).first()).toBeVisible();
+  });
+
+  test("notifications: disabled email is unavailable with backend reason", async ({ page }) => {
+    const disabledMessage =
+      "Optional parent email delivery is disabled by backend configuration. In-app notifications remain available.";
+    await page.route("**/admin/notifications/email-status", (route) =>
+      route.fulfill({
+        status: 200,
+        json: {
+          enabled: false,
+          provider_ready: true,
+          delivery_mode: "disabled",
+          delivery_status_message: disabledMessage,
+          test_mode_enabled: false,
+          operational_master_enabled: false,
+          fee_reminders_enabled: false,
+          automatic_categories: {},
+        },
+      })
+    );
+
+    await page.goto("/admin/notifications");
+    await expect(page.getByRole("checkbox", { name: /Optional Email/i })).toBeDisabled();
+    await expect(page.getByText(disabledMessage).first()).toBeVisible();
+    await expect(
+      page.getByRole("checkbox", { name: /^In-app Parent Portal/i })
+    ).toBeEnabled();
   });
 
   test("notifications: sibling student targeting previews one email", async ({ page }) => {
@@ -206,10 +236,34 @@ test.describe("Admin Portal", () => {
     }
 
     await page.getByRole("button", { name: "Preview Recipients" }).click();
-    await expect(page.getByText("Linked parents")).toBeVisible();
+    await expect(page.getByText("In-app eligible")).toBeVisible();
     await expect(page.getByText("Optional eligible")).toBeVisible();
-    await expect(page.getByText("Linked parents").locator("..")).toContainText("1");
+    await expect(page.getByText("Optional excluded")).toBeVisible();
+    await expect(page.getByText("Verified eligible")).toBeVisible();
+    await expect(page.getByText("Unverified", { exact: true })).toBeVisible();
+    await expect(page.getByText("In-app eligible").locator("..")).toContainText("1");
     await expect(page.getByText("Optional eligible").locator("..")).toContainText("1");
+  });
+
+  test("notifications: review shows recipient, category, and channels", async ({ page }) => {
+    await page.goto("/admin/notifications");
+    await page.getByPlaceholder("Parent name or username").fill("PAR_TEST");
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await page.getByRole("button", { name: /Test Parent.*PAR_TEST/i }).click();
+    await page.getByRole("button", { name: "Preview Recipients" }).click();
+
+    await page.getByPlaceholder("Enter notification title").fill("Review test");
+    await page.getByPlaceholder("Write your announcement...").fill("Review only; do not send.");
+    await page.getByRole("button", { name: "Review & Send Notification" }).click();
+
+    const dialog = page.getByRole("dialog", { name: "Confirm Notification" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("Test Parent (PAR_TEST)");
+    await expect(dialog).toContainText("General announcement");
+    await expect(dialog).toContainText("In-app");
+    await expect(dialog).toContainText("Optional Email: available");
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toBeHidden();
   });
 
   test("notification bell: live inbox with result-submission events", async ({ page, request }) => {
